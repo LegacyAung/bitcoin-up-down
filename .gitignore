@@ -1,0 +1,11 @@
+# Ignore data and models
+data/
+models/*.h5
+models/*.json
+models/*.pkl
+
+# Python environment
+__pycache__/
+*.pyc
+venv/
+.env

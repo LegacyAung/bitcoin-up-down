@@ -49,5 +49,3 @@ def get_binance_time_range(days=3):
     
     return start_time, end_time
 
-
-print("hello world")
