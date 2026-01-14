@@ -72,8 +72,12 @@ class DataProcessor:
         
         raw_df = self.load_data(csv_path)
         df_with_target = self.create_target(raw_df)
-        features, _ = self.split_features_target(df_with_target)
-        scaled_features = self.scale_features(features)
+        _, features = self.split_features_target(df_with_target)
+
+        # CRITICAL: Remove non-numeric columns before scaling
+        numeric_features = features.drop(columns=['timestamp'], errors='ignore')
+
+        scaled_features = self.scale_features(numeric_features)
         
         return self.create_sliding_windows(scaled_features)
 
@@ -82,24 +86,18 @@ if __name__ == "__main__":
     processor = DataProcessor(window_size=4) # Using 4 for easier printing
     input_path = os.path.join("data", "btcusdt_with_indicators.csv")
     
-    # ... (Your previous loading/scaling code) ...
-    dataframe = processor.load_data(input_path)
-    target_dataframe = processor.create_target(dataframe)
-    target, features = processor.split_features_target(target_dataframe)
-    features_only_numeric = features.drop(columns=['timestamp'], errors='ignore')
-    scaled_data = processor.scale_features(features_only_numeric) 
+    x_lstm, x_xgb, y = processor.run_full_pipeline(input_path)
+    print(f"Success! LSTM Shape: {x_lstm[:5]}")
+    print(f"Success! xgb Shape: {x_xgb[:5]}")
+    print(f"Success! y: {y[:5]}")
 
-    # --- STEP 5: Call the sliding windows method ---
-    X_lstm, X_xgb, y = processor.create_sliding_windows(scaled_data)
 
-    print("\n" + "="*30)
-    print("SLIDING WINDOWS OUTPUT")
-    print("="*30)
-    
-    print(f"LSTM 3D Shape: {X_lstm.shape}") # (Samples, TimeSteps, Features)
-    print(f"XGB 2D Shape:  {X_xgb.shape}")  # (Samples, Features)
-    print(f"Target Shape:  {y.shape}")      # (Samples,)
 
-    print("\n--- FIRST LSTM WINDOW (X_lstm[0]) ---")
-    print("This is what the model sees for ONE prediction:")
-    print(X_lstm[0])
+    # sentiment model
+    # 91000 
+    # 1min candlestick 3 days
+    # 1min prediction (accuracy 57.34%) 
+    # 15min prediciton  (accuracy 65%)
+            
+    # xgboost ---> RSI, MACD, EMA (pure logic)
+    # 
