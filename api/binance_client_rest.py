@@ -47,4 +47,5 @@ def get_binance_history():
 
 # Run and check results
 if __name__ == "__main__":
-    get_binance_history()
+    ans = get_binance_history()
+    print(ans)

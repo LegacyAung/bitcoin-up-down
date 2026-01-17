@@ -91,13 +91,3 @@ if __name__ == "__main__":
     print(f"Success! xgb Shape: {x_xgb[:5]}")
     print(f"Success! y: {y[:5]}")
 
-
-
-    # sentiment model
-    # 91000 
-    # 1min candlestick 3 days
-    # 1min prediction (accuracy 57.34%) 
-    # 15min prediciton  (accuracy 65%)
-            
-    # xgboost ---> RSI, MACD, EMA (pure logic)
-    # 

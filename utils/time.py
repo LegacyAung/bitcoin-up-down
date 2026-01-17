@@ -40,12 +40,26 @@ def get_market_window_timestamps():
     ]
 
 
+# will get unix timestamps of previous 24 hr starting from current timestamp 15min window
+def get_prev_24hr_timestamps():
+    market_window_timestamps = get_market_window_timestamps()
+    current_market_timestamp = int(market_window_timestamps[1])
+    prev_24hr_timestamps = []
+
+    for i in range(96):
+        past_ts_sec = current_market_timestamp - (i * 15 * 60)
+        prev_24hr_timestamps.append(str(past_ts_sec))
+
+    return prev_24hr_timestamps
+
+
+
 
 # get binance time range in millisecond timestamps
-# default 3 days
-def get_binance_time_range(days=3):
+def get_binance_time_range(days=7):
     end_time = int(time.time() * 1000)
     start_time = end_time - (days * 24 * 60 * 60 * 1000)
     
     return start_time, end_time
+
 
