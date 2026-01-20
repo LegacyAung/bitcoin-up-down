@@ -1,93 +1,60 @@
 import asyncio
 import websockets
 import json
+from datetime import datetime
 
-from config import RTDS_WEBSOCKET
+# Use your config import
+# from config import RTDS_WEBSOCKET 
+RTDS_WEBSOCKET = "wss://ws-live-data.polymarket.com"
 
-
-
-#get current btc price from data chainlink
 async def stream_btcusdt_price_chainlink():
-    websocket_url = RTDS_WEBSOCKET
-
+    url = RTDS_WEBSOCKET
     
-    async with websockets.connect(websocket_url, ping_interval=5, ping_timeout=10) as websocket:
-        print(f"Connected to RTDS: {websocket_url}")
+    while True:  # The persistence loop
+        try:
+            async with websockets.connect(url, ping_interval=5, ping_timeout=10) as ws:
+                print(f"🚀 {datetime.now().strftime('%H:%M:%S')} - Connected to RTDS")
 
-        # Subscription for Chainlink BTC/USD
-        subscribe_msg = {
-            "action": "subscribe",
-            "subscriptions": [
-                {
-                    "topic": "crypto_prices_chainlink",
-                    "type": "*",
-                    "filters": json.dumps({"symbol": "btc/usd"})  # Chainlink uses slash format
+                subscribe_msg = {
+                    "action": "subscribe",
+                    "subscriptions": [{
+                        "topic": "crypto_prices_chainlink",
+                        "type": "*",
+                        "filters": json.dumps({"symbol": "btc/usd"})
+                    }]
                 }
-            ]
-        }
+                await ws.send(json.dumps(subscribe_msg))
 
-        await websocket.send(json.dumps(subscribe_msg))
+                # The listener loop
+                async for message in ws:
+                    if not message or not message.strip():
+                        continue # Skip empty "Keep-Alive" messa
+                    data = json.loads(message)
+                    payload = data.get('payload', {})
 
-        async for message in websocket:
-            if not message or not message.strip():
-                continue
+                    # 1. Handle the Initial History Dump
+                    if 'data' in payload and isinstance(payload['data'], list):
+                        print(f"\n--- History Received ({len(payload['data'])} points) ---")
+                        for entry in payload['data']:
+                            print(f"Time: {entry.get('timestamp')} | Price: {entry.get('value')}")
+                        
+                        print("--- End of History: Reconnecting for fresh dump... ---\n")
+                        # BREAK HERE to trigger the outer loop's reconnect
+                        break 
+                    
+                    # 2. Handle Live Updates (if you want to stay connected, don't break above)
+                    elif data.get("type") == "update":
+                        print(f"LIVE: {payload.get('value')}")
 
-            try:
-                # 2. Now it's safe to parse
-                data = json.loads(message)
-                payload = data.get('payload', {})
+                # Small delay to prevent spamming the server
+                await asyncio.sleep(1) 
 
-                if 'data' in payload and isinstance(payload['data'], list):
-                    print(f"\n--- Historical Data for {payload.get('symbol')} ---")
-                    for entry in payload['data']:
-                        ts = entry.get('timestamp')
-                        val = entry.get('value')
-                        print(f"timestamp: {ts} || value: {val}")
-                    print("--- End of History ---\n")
-                
-                # Check for single live updates (sent after the initial dump)
-                elif data.get("type") == "update":
-                    ts = payload.get('timestamp')
-                    val = payload.get('value')
-                    print(f"timestamp: {ts} || value: {val}")
-                
-            except json.JSONDecodeError:
-                print(f"Received non-JSON message: {message}")
+        except Exception as e:
+            print(f"❌ Connection Error: {e}. Retrying in 5s...")
+            await asyncio.sleep(5)
 
-
-
-    websocket_url = RTDS_WEBSOCKET
-
-    async with websockets.connect(websocket_url, ping_interval=5, ping_timeout=10) as websocket:
-        print(f"Connected to RTDS: {websocket_url}")
-
-        subscribe_msg = {
-            "action": "subscribe", 
-            "subscriptions": [
-                {
-                "topic": "crypto_prices",
-                "type": "update",
-                "filters": json.dumps({"symbol": "btcusdt"})
-                }
-            ]
-        }
-
-        await websocket.send(json.dumps(subscribe_msg))
-
-        async for message in websocket:
-            if not message or not message.strip():
-                continue
-            try:
-                data = json.loads(message)
-                payload_data = data.get('payload', {})
-                
-                # Filter for the continuous Binance price updates
-                print(payload_data)
-            except json.JSONDecodeError:
-                pass
-             
 if __name__ == "__main__":
     try:
         asyncio.run(stream_btcusdt_price_chainlink())
     except KeyboardInterrupt:
-        print("Stream stopped by user.")
+        print("\n👋 Stream stopped by user.")

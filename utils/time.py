@@ -56,10 +56,12 @@ def get_prev_24hr_timestamps():
 
 
 # get binance time range in millisecond timestamps
-def get_binance_time_range(days=7):
+def get_binance_time_range(days):
     end_time = int(time.time() * 1000)
     start_time = end_time - (days * 24 * 60 * 60 * 1000)
     
     return start_time, end_time
+
+
 
 

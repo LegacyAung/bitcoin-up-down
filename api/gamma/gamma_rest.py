@@ -6,7 +6,6 @@ BTC_UPDOWN_15M = "btc-updown-15m"
 EVENTS_GAMMA_ENDPOINT = EVENTS_GAMMA_ENDPOINT
 
 
-
 def fetch_current_event_slug(active=True, closed=False):
 
     # parameters and endpoints
