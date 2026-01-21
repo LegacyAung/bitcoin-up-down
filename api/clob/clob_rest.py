@@ -170,7 +170,7 @@ class ClobRest:
         url = f"{self.clob_endpoint}/book"
         return await self.clob_services.get_clob_rest(url,params={'token_id':self.clob_ids})
 
-    async def fetch_last_price(self, side="buy"):
+    async def fetch_last_price(self, side=str): # side="buy" / "sell"
         """Returns the current market price for a side (buy/sell)"""
 
         url = f"{CLOB_ENDPOINT}/price"

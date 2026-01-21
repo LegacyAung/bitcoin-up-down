@@ -16,12 +16,12 @@ class BinanceWss:
         self.last_callback = None
 
 
-    async def stream_binance_data(self, callback):
+    async def stream_binance_data(self, params, callback):
         self.last_callback = callback
         self.is_running = True
         subscribe_msg = {
             "method":"SUBSCRIBE",
-            "params":["btcusdt@kline_1m"],
+            "params":params, #["btcusdt@kline_1m"]
             "id":1
         }
         print(f"🚀 Streaming Binance 1m Candles")

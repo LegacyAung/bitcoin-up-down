@@ -14,13 +14,14 @@ class MarketManager:
         self.clob_rest = ClobRest()
         self.binance_wss = BinanceWss()
         self.data_manager = DataManager(
-            
+            self.clob_wss,
             self.binance_wss
         )
         self.last_msg_time = time.time()
         self.is_running = True
     
     async def market_starter(self):
+        params = ["btcusdt@kline_1m", "btcusdt@kline_1s"]
         """
         Leg 3: Initialize Authentication and Start Stream
         """
@@ -35,7 +36,7 @@ class MarketManager:
             print("🚀 Starting Binance Market Data Stream...")
             await asyncio.gather(
                 self.clob_wss.stream_market_data(self.data_manager.handle_clob_wss_data),
-                self.binance_wss.stream_binance_data(self.data_manager.handle_binance_wss_data)
+                self.binance_wss.stream_binance_data(params, self.data_manager.handle_binance_wss_data)
             )
         except Exception as e:
             print(f"🛑 Failed to start market analyzer: {e}")
