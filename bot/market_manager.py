@@ -4,14 +4,19 @@ import time
 
 from api.clob.clob_wss import ClobWss
 from api.clob.clob_rest import ClobRest
-from .data_manager import DataManager
+from api.binance.binance_wss import BinanceWss
+from .data_manager.data_manager import DataManager
 
 
 class MarketManager:
     def __init__(self):
         self.clob_wss = ClobWss()
         self.clob_rest = ClobRest()
-        self.data_manager = DataManager(self.clob_wss)
+        self.binance_wss = BinanceWss()
+        self.data_manager = DataManager(
+            
+            self.binance_wss
+        )
         self.last_msg_time = time.time()
         self.is_running = True
     
@@ -25,10 +30,13 @@ class MarketManager:
             await self.clob_rest.authenticate()
             print("✅ Authentication Successful. Signer ready for L1.")
 
-            # Now that we are authenticated, start the websocket stream
-            print("🚀 Starting Market Data Stream...")
-            await self.clob_wss.stream_market_data(self.data_manager.handle_wss_data)
-            
+            # start clob websocket stream
+            print("🚀 Starting PolyMarket Data Stream...")
+            print("🚀 Starting Binance Market Data Stream...")
+            await asyncio.gather(
+                self.clob_wss.stream_market_data(self.data_manager.handle_clob_wss_data),
+                self.binance_wss.stream_binance_data(self.data_manager.handle_binance_wss_data)
+            )
         except Exception as e:
             print(f"🛑 Failed to start market analyzer: {e}")
 

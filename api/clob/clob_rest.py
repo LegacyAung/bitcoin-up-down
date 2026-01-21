@@ -6,7 +6,7 @@ from config import CLOB_ENDPOINT, CHAIN_ID, PRIVATE_KEY, FUNDER_ADDRESS
 from py_clob_client.client import ClobClient
 from py_clob_client.client import ApiCreds
 from py_clob_client.clob_types import BalanceAllowanceParams, AssetType
-from services.clob_service import ClobService 
+from .clob_service import ClobService 
 from ..gamma.gamma_rest import fetch_current_event_slug
 
 

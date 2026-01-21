@@ -1,7 +1,7 @@
 import asyncio
 import json
 from config import CLOB_WEBSOCKET
-from services.clob_service import ClobService 
+from .clob_service import ClobService 
 from ..gamma.gamma_rest import fetch_current_event_slug
 
 class ClobWss:
