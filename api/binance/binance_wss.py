@@ -24,7 +24,7 @@ class BinanceWss:
             "params":params, #["btcusdt@kline_1m"]
             "id":1
         }
-        print(f"🚀 Streaming Binance 1m Candles")
+        print(f"🚀 Streaming Binance {params[0] and params[1]} Candles")
         try:
             await self.binance_service.stream_binance_wss(
                 self.binance_websocket,

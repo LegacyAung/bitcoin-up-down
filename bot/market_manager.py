@@ -21,10 +21,10 @@ class MarketManager:
         self.is_running = True
     
     async def market_starter(self):
-        params = ["btcusdt@kline_1m", "btcusdt@kline_1s"]
         """
         Leg 3: Initialize Authentication and Start Stream
         """
+        params = ["btcusdt@kline_1m", "btcusdt@kline_1s"]
         print("🔐 Initializing L1/L2 Authentication...")
         try:
             # This enables both L1 (local signing) and L2 (API access)
@@ -32,11 +32,13 @@ class MarketManager:
             print("✅ Authentication Successful. Signer ready for L1.")
 
             # start clob websocket stream
+            print("🚀 fetching Binance Rest data...")
+            await self.data_manager.handle_binance_rest_data()
             print("🚀 Starting PolyMarket Data Stream...")
             print("🚀 Starting Binance Market Data Stream...")
             await asyncio.gather(
                 self.clob_wss.stream_market_data(self.data_manager.handle_clob_wss_data),
-                self.binance_wss.stream_binance_data(params, self.data_manager.handle_binance_wss_data)
+                self.binance_wss.stream_binance_data(params, self.data_manager.handle_binance_wss_data),
             )
         except Exception as e:
             print(f"🛑 Failed to start market analyzer: {e}")

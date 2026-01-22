@@ -6,18 +6,20 @@ class FileIO:
     def __init__(self, base_folder=r"E:\bitcoin_up_down\data"):
         self.base_folder = base_folder
         # Standardize the raw data path
-        self.raw_data_path = os.path.join(self.base_folder, "btc_candles_1m.jsonl")
+        # self.raw_data_path = os.path.join(self.base_folder,"btc_candles_1m.jsonl") #"btc_candles_1m.jsonl"
         
         # Ensure the directory exists
         if not os.path.exists(self.base_folder):
             os.makedirs(self.base_folder)
             print(f"📁 Created folder: {self.base_folder}")
 
+    
+    
     def get_path(self, filename):
-        """
-        Generates a dynamic path based on the name provided.
-        Example: get_path('macd') -> E:\bitcoin_up_down\data\btc_macd_1m.jsonl
-        """
+        # """
+        # Generates a dynamic path based on the name provided.
+        # Example: get_path('macd') -> E:\bitcoin_up_down\data\btc_macd_1m.jsonl
+        # """
         return os.path.join(self.base_folder, filename)
 
     def load_jsonl_to_df(self, file_path):
