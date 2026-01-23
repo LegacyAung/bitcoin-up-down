@@ -1,5 +1,5 @@
 import pandas as pd
-import numpy as np
+
 
 class Macd:
     def __init__(self, df, fast=12, slow=26, signal=9):
@@ -10,9 +10,8 @@ class Macd:
     
    
     def calculate_macd(self, column='close'):
-        """Initial calculation for the whole history."""
         if self.df is None or self.df.empty: return None
-        
+        self.df[column] = pd.to_numeric(self.df[column], errors='coerce')
         # EMAs and MACD
          
         self.df['ema_fast'] = self.df[column].ewm(span=self.fast, adjust=False).mean()

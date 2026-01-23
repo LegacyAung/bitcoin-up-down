@@ -6,8 +6,6 @@ from api.clob.clob_rest import ClobRest
 from api.clob.clob_wss import ClobWss
 from api.clob.clob_rest import ClobRest
 from api.binance.binance_wss import BinanceWss
-from api.gamma.gamma_rest import fetch_event_slug, fetch_current_event_slug
-from utils.time import get_market_window_timestamps
 from .data_synthesizer import DataSynthesizer
 from .data_distributor import DataDistributor
 
@@ -23,30 +21,38 @@ class DataManager:
         self.data_synthesizer = DataSynthesizer()
         self.data_distributor = DataDistributor()
 
+        # Configuration for your 3 legs
+        self.rest_configs = [
+            {"hours": 6,  "interval": "1s",  "label": "6hr_1s"},
+            {"hours": 24, "interval": "1m",  "label": "1day_1m"},
+            {"hours": 24, "interval": "15m", "label": "1day_15m"}
+        ]
+
     async def handle_clob_wss_data(self,msg):
         self.clob_wss_market_data = msg
         
+    async def handle_binance_wss_data(self, msg):
+        """Processes all 2 legs of WSS data dynamically."""
+        if 'k' not in msg:
+            if 'result' in msg:
+                print("🚀 Subscription successful, waiting for first candle...")
+            return 
         
-
-    async def handle_binance_wss_data(self,msg):
-        if 'result' in msg:
-            print("⚠️ Received empty or malformed message from WebSocket.")
-            return
-        else:
-            self.binance_wss_market_data = msg
-            await asyncio.gather(
-                self._handle_1s_binance_wss_data(),
-                self._handle_1min_binance_wss_date()
-            )
-            print("✅binance wss is passing down data stream")
-
+        # 2. DATA PROCESSING
+        kline = msg['k']
+        if kline.get('x'):  # Only process when candle is closed
+            # Send to synthesizer
+            df = await self.data_synthesizer.synthesize_raw_binance_wss_data(msg)
+            if df is not None:
+                interval = kline.get('i')
+                await self.data_distributor.distribute_binance_wss_to_macd(df=df, interval=interval)
 
     async def handle_binance_rest_data(self):
-        await asyncio.gather(
-            self._handle_6hrs_1s_binance_rest_data(),
-            self._handle_1day_1m_binance_rest_data(),
-            self._handle_1day_15m_binanace_rest_data()
-        )
+        """Processes all 3 legs of REST data dynamically."""
+        tasks = []
+        for config in self.rest_configs:
+            tasks.append(self._fetch_and_distribute_rest(config))
+        await asyncio.gather(*tasks)
         
     async def handle_current_event_snapshot(self):
         data = await asyncio.gather(
@@ -56,49 +62,19 @@ class DataManager:
         )
         return data
     
-    async def handle_current_slug(self):
-        return fetch_current_event_slug(active=True, closed=False)
     
-    async def handle_previous_slug(self):
-        timestamps = get_market_window_timestamps()
-        prev_timestamp = timestamps[0]
-        return fetch_event_slug(active=False,closed=True,timestamp=prev_timestamp)
 
 
-    # for MACD data
-    async def _handle_1day_1m_binance_rest_data(self):
-        raw_data_list = await self.binance_rest.get_binance_rest_data(24,"1m","BTCUSDT")
-        df = await self.data_synthesizer.synthesize_raw_binance_rest_data(raw_data_list=raw_data_list)
-        await self.data_distributor.distribute_binance_rest_to_macd(df=df, interval='1m', label='1day_1m')
     
+    async def _fetch_and_distribute_rest(self, config):
+        """Single helper for all REST calls."""
+        raw = await self.binance_rest.get_binance_rest_data(config['hours'], config['interval'], "BTCUSDT")
+        df = await self.data_synthesizer.synthesize_raw_binance_rest_data(raw)
+        await self.data_distributor.distribute_binance_rest_to_macd(
+            df=df, interval=config['interval'], label=config['label']
+        )
+   
     
-    async def _handle_1day_15m_binanace_rest_data(self):
-        raw_data_list = await self.binance_rest.get_binance_rest_data(24,"15m","BTCUSDT")
-        df = await self.data_synthesizer.synthesize_raw_binance_rest_data(raw_data_list=raw_data_list)
-        await self.data_distributor.distribute_binance_rest_to_macd(df=df, interval='15m', label='1day_15m')
-    
-    async def _handle_6hrs_1s_binance_rest_data(self):
-        raw_data_list = await self.binance_rest.get_binance_rest_data(6,"1s","BTCUSDT")
-        df = await self.data_synthesizer.synthesize_raw_binance_rest_data(raw_data_list=raw_data_list)
-        await self.data_distributor.distribute_binance_rest_to_macd(df=df, interval='6hr', label='6hr_1s')
-    
-    async def _handle_1min_binance_wss_date(self):
-        while self.binance_wss_market_data is None:
-            print("⏳ Waiting for first Binance WSS message...")
-            await asyncio.sleep(0.5)
-        kline = self.binance_wss_market_data.get('k')
-        if kline['T'] - kline['t'] == 5999 and kline['x'] == True:
-            df = self.data_synthesizer.synthesize_raw_binance_wss_data(self.binance_wss_market_data)
-            await self.data_distributor.distribute_binance_wss_to_macd(df=df)
-        
-    async def _handle_1s_binance_wss_data(self):
-        while self.binance_wss_market_data is None:
-            print("⏳ Waiting for first Binance WSS message...")
-            await asyncio.sleep(0.5)
-        kline = self.binance_wss_market_data.get('k')
-        if kline['T'] - kline['t'] == 999 and kline['x'] == True:
-            df = self.data_synthesizer.synthesize_raw_binance_wss_data(self.binance_wss_market_data)
-            await self.data_distributor.distribute_binance_wss_to_macd(df=df)
         
     
 

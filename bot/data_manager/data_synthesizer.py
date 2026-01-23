@@ -10,13 +10,16 @@ class DataSynthesizer:
 
     # changing raw data from binance wss to panda dataframe
     async def synthesize_raw_binance_wss_data(self,raw_data):
+        k = raw_data.get('k')
+        if not k:
+            return None
         self.candle = Candle(
-            timestamp=int(raw_data['t']),
-            open=float(raw_data['o']),
-            high=float(raw_data['h']),
-            low=float(raw_data['l']),
-            close=float(raw_data['c']),
-            volume=float(raw_data['v'])
+            timestamp=int(k['t']),
+            open=float(k['o']),
+            high=float(k['h']),
+            low=float(k['l']),
+            close=float(k['c']),
+            volume=float(k['v'])
         )
 
         df = pd.DataFrame([asdict(self.candle)]) 
