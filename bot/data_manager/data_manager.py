@@ -23,9 +23,9 @@ class DataManager:
 
         # Configuration for your 3 legs
         self.rest_configs = [
-            {"hours": 6,  "interval": "1s",  "label": "6hr_1s"},
-            {"hours": 24, "interval": "1m",  "label": "1day_1m"},
-            {"hours": 24, "interval": "15m", "label": "1day_15m"}
+            {"mins": 15,  "interval": "1s",  "label": "1hr_1s"},
+            {"mins": 1440, "interval": "1m",  "label": "1day_1m"},
+            {"mins": 1440, "interval": "15m", "label": "1day_15m"}
         ]
 
     async def handle_clob_wss_data(self,msg):
@@ -45,7 +45,7 @@ class DataManager:
             df = await self.data_synthesizer.synthesize_raw_binance_wss_data(msg)
             if df is not None:
                 interval = kline.get('i')
-                await self.data_distributor.distribute_binance_wss_to_macd(df=df, interval=interval)
+                await self.data_distributor.distribute_binance_wss(df=df, interval=interval)
 
     async def handle_binance_rest_data(self):
         """Processes all 3 legs of REST data dynamically."""
@@ -68,9 +68,9 @@ class DataManager:
     
     async def _fetch_and_distribute_rest(self, config):
         """Single helper for all REST calls."""
-        raw = await self.binance_rest.get_binance_rest_data(config['hours'], config['interval'], "BTCUSDT")
+        raw = await self.binance_rest.get_binance_rest_data(config['mins'], config['interval'], "BTCUSDT")
         df = await self.data_synthesizer.synthesize_raw_binance_rest_data(raw)
-        await self.data_distributor.distribute_binance_rest_to_macd(
+        await self.data_distributor.distribute_binance_rest(
             df=df, interval=config['interval'], label=config['label']
         )
    

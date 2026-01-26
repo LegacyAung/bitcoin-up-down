@@ -2,7 +2,7 @@ import asyncio
 import json
 import time
 
-from utils.time import get_binance_time_range, get_binance_time_range_in_hours
+from utils.time import get_binance_time_range, get_binance_time_range_in_hours, get_binance_time_range_in_mins
 from .binance_service import BinanceService
 from config import BINANCE_ENDPOINT
 from utils.interval import INTERVAL_MS
@@ -14,9 +14,9 @@ class BinanceRest:
         self.binance_url = BINANCE_ENDPOINT
         self.interval_ms = INTERVAL_MS
         
-    async def get_binance_rest_data(self,hrs=int,interval=str,symbol=str): #24,"1m","BTCUSDT"
+    async def get_binance_rest_data(self,mins=int,interval=str,symbol=str): #24,"1m","BTCUSDT" #1440,"1m","BTCUSDT"
         all_candles = []
-        start_time, end_time = get_binance_time_range_in_hours(hrs)
+        start_time, end_time = get_binance_time_range_in_mins(mins)
         current_start = start_time
 
 

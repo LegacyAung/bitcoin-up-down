@@ -69,4 +69,53 @@ def get_binance_time_range_in_hours(hrs):
 
 
 
+def get_binance_time_range_in_mins(mins):
+    end_time = int(time.time() * 1000)
+    start_time = end_time - (mins * 60 * 1000)
+    return start_time, end_time
 
+
+
+def get_time_windows_in_unix():
+    now = datetime.now()
+    
+    current_ts = int(now.timestamp())
+    
+    minute_start = now.replace(second=0, microsecond=0)
+    start_ts = int(minute_start.timestamp())
+    
+    minute_end = minute_start + timedelta(seconds=59)
+    end_ts = int(minute_end.timestamp())
+    
+    return current_ts,start_ts,end_ts
+    
+
+def get_no_1s_behind_current_time():
+    current_ts, start_ts, end_ts = get_time_windows_in_unix()
+    print(f"🎯 TARGET END TIME: {end_ts}")
+
+    while True:
+        now = datetime.now()
+        current_ts = int(now.timestamp())
+        elapsed = current_ts - start_ts
+        rem = end_ts - current_ts
+        if current_ts >= end_ts:
+            _, start_ts, end_ts = get_time_windows_in_unix()
+            # print(f"\n🎯 NEW TARGET END TIME: {end_ts}")
+            elapsed = current_ts - start_ts
+
+        
+        # print(f"\r🕒 TS: {current_ts} | Elapsed: {elapsed}s | Rem: {end_ts - current_ts}s   ", end="", flush=True)
+        time.sleep(0.2)
+        return current_ts, elapsed , rem
+
+
+       
+
+
+
+
+
+
+
+    
