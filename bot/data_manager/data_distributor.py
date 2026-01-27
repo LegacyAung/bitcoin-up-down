@@ -46,7 +46,7 @@ class DataDistributor:
            self.file_io.append_row_to_jsonl(path_1m,candle_dict)
         if interval == '1s':
             self.file_io.append_row_to_jsonl(path_1s,candle_dict)        
-        print(f"This is from data distributor: {df}")
+        # print(f"This is from data distributor: {df}")
 
 
    

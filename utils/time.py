@@ -92,7 +92,7 @@ def get_time_windows_in_unix():
 
 def get_no_1s_behind_current_time():
     current_ts, start_ts, end_ts = get_time_windows_in_unix()
-    print(f"🎯 TARGET END TIME: {end_ts}")
+    
 
     while True:
         now = datetime.now()

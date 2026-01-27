@@ -1,4 +1,3 @@
-import pandas as pd
 import numpy as np
 
 
@@ -24,7 +23,9 @@ class MacdSignals1s:
         bear_weight = abs(np.sum(hist[hist < 0])) if bear_secs_count > 0 else 0 
 
         net_bias = bull_weight - bear_weight
+        
         print(f"[{self.label}] Elapsed: {elapsed}s")
+        print("hist_1s: ", self.df['histogram'].iloc[-1])
         print(f"Bullish: {bull_secs_count}s (Weight: {bull_weight:.4f})")
         print(f"Bearish: {bear_secs_count}s (Weight: {bear_weight:.4f})")
         print(f"Net Bias: {net_bias:.4f}")
@@ -36,31 +37,7 @@ class MacdSignals1s:
             "elapsed": elapsed
         }
         
-    def define_macd_hist_momentum(self, period=3):
-        print("current_interval: ", self.interval)
-        print("This is from signal.py: combined df is here ")
-        if self.df is None or len(self.df) < period:
-            return
-        recent_hist = self.df['histogram'].tail(period).values
-        diffs = np.diff(recent_hist)
-
-        # print("This is recent 5 1s candles: ",recent_hist)
-        # print("the diffs: ", diffs)
-
-        # Signal Logic
-        if all(d > 0 for d in diffs):
-            print("BULLISH")
-            return "BULLISH"
-        
-        elif all(d < 0 for d in diffs):
-            print("BEARISH")
-            return "BEARISH"
-
-        print("NEUTRAL")
-        return "NEUTRAL"
-        
-        
-
+    
     def define_macd_hist_zero_crossover(self):
         if len(self.df) < 2 : return
 
@@ -74,8 +51,7 @@ class MacdSignals1s:
             print("BEARISH_CROSS")
             return "BEARISH_CROSS"
 
-        print("NEUTRAL")
-        return "NEUTRAL"
+        
     
 
     def define_macd_hist_velocity(self, period=3):
@@ -97,25 +73,25 @@ class MacdSignals1s:
         return "STABLE"
 
 
-    def get_1s_trend_slope(self, lookback=20):
-        if len(self.df) < lookback: 
-            return 0
+    # def get_1s_trend_slope(self, lookback=20):
+    #     if len(self.df) < lookback: 
+    #         return 0
             
-        y = self.df['histogram'].tail(lookback).values
-        x = np.arange(len(y))
+    #     y = self.df['histogram'].tail(lookback).values
+    #     x = np.arange(len(y))
         
-        # Linear regression: returns [slope, intercept]
-        slope, intercept = np.polyfit(x, y, 1) 
+    #     # Linear regression: returns [slope, intercept]
+    #     slope, intercept = np.polyfit(x, y, 1) 
         
-        # Printout logic
-        if slope > 0:
-            print(f"🚀 BULLISH SLOPE: {slope:.6f} (1m candle warming up)")
-        elif slope < 0:
-            print(f"lower BEARISH SLOPE: {slope:.6f} (1m candle cooling down)")
-        else:
-            print(f"flat FLAT SLOPE: {slope:.6f}")
+        
+    #     if slope > 0:
+    #         print(f"🚀 BULLISH SLOPE: {slope:.6f} (1m candle warming up)")
+    #     elif slope < 0:
+    #         print(f"(BEAR BEARISH SLOPE: {slope:.6f} (1m candle cooling down)")
+    #     else:
+    #         print(f"flat FLAT SLOPE: {slope:.6f}")
             
-        return slope
+    #     return slope
 
     def _get_no_1s_behind_current_time(self):
 
