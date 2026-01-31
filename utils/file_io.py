@@ -3,23 +3,21 @@ import json
 import pandas as pd
 
 class FileIO:
-    def __init__(self, base_folder=r"E:\bitcoin_up_down\data"):
-        self.base_folder = base_folder
-        # Standardize the raw data path
-        # self.raw_data_path = os.path.join(self.base_folder,"btc_candles_1m.jsonl") #"btc_candles_1m.jsonl"
+    def __init__(self, folder_name="data"):
         
-        # Ensure the directory exists
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(current_dir)
+        
+        self.base_folder = os.path.join(project_root, folder_name)
+        print(self.base_folder)
+
         if not os.path.exists(self.base_folder):
             os.makedirs(self.base_folder)
             print(f"📁 Created folder: {self.base_folder}")
 
-    
-    
     def get_path(self, filename):
-        # """
-        # Generates a dynamic path based on the name provided.
-        # Example: get_path('macd') -> E:\bitcoin_up_down\data\btc_macd_1m.jsonl
-        # """
+        """Generate a dynamic path based on the filename provided"""
+        """Example: get_path('macd') -> E:/bitcoin_up_down/data/btc_macd_1m.jsonl"""
         return os.path.join(self.base_folder, filename)
 
     def load_jsonl_to_df(self, file_path):
@@ -81,3 +79,12 @@ class FileIO:
             print(f"🗑️ Deleted last row from {os.path.basename(file_path)}")
         except Exception as e:
             print(f"❌ Error deleting row: {e}")
+
+
+
+def main():
+    file_io = FileIO()
+    return file_io    
+
+if __name__ == "__main__":
+    main()

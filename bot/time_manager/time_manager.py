@@ -1,15 +1,26 @@
-import time
-from utils.time import get_market_window_timestamps, get_current_time_et
+from .time_persistance import TimePersistance
 
-class time_manager:
+
+
+class TimeManager:
     def __init__(self):
-        self.market_window_timestamps = get_market_window_timestamps()
-        self.get_current_time_et = get_current_time_et()
+        self.time_persistance = TimePersistance()
 
-    async def persistantly_cal_time_delta_of_next_resolution(self):
-        pass
+        
+    def handle_time_persistance(self, res_sec):
+        time_data_utc = self.time_persistance.persistantly_cal_time_delta_to_next_resolution(res_sec)
+        return time_data_utc
+
+    def handle_time_analyzer(self):
+        return
 
 
-    async def persistantly_cal_current_time(self):
-        pass
 
+
+
+
+def main():
+    pass
+
+if __name__ == "__main__":
+    main()

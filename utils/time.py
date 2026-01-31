@@ -1,8 +1,15 @@
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
+#------------------------------UTC TIME------------------------------#
+def get_current_time_utc():
+    now = datetime.now(timezone.utc)
+    current_utc = int(now.timestamp())
+    return current_utc
 
+
+# -----------------ET TIME-----------------------#
 #current time in Unix timestamp and et time
 def get_current_time_et():
     et = ZoneInfo("America/New_York")
@@ -77,7 +84,7 @@ def get_binance_time_range_in_mins(mins):
 
 
 def get_time_windows_in_unix():
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     
     current_ts = int(now.timestamp())
     

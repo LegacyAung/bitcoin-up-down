@@ -1,10 +1,9 @@
 import asyncio
-import json
 import os
 
 from utils.file_io import FileIO
 from strategies.strategy_manager import StratedyManager
-
+from .data_persistance import DataPersistance
 
 
 class DataDistributor:
@@ -12,9 +11,9 @@ class DataDistributor:
     def __init__(self):
         self.file_io = FileIO()
         self.stratedgy_manager = StratedyManager()
+        self.data_persistance = DataPersistance()
        
         
-
     async def distribute_binance_rest(self, df, interval, label):
         if df.empty : return
         cleaned_df = df.iloc[:-1].copy()
@@ -26,27 +25,31 @@ class DataDistributor:
             ),
             
         )
-        path = self.file_io.get_path(f"btc_candles_{label}.jsonl")
-        self.file_io.export_full_df_to_jsonl(cleaned_df, path)
-        print(f"📦 Label: {label} | Interval: {interval} | Saved to: {path}")
+        filename = f"btc_candles_{label}.jsonl"
+        self._distribute_as_jsonl(cleaned_df,filename,interval,label)
                 
     # persistently updating the most recent binance kline data
     async def distribute_binance_wss(self, df, interval):
         if df.empty : return
-        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        data_dir = os.path.join(base_dir, "data")
-        os.makedirs(data_dir, exist_ok=True)
-        label_1m=f"btc_candles_1day_{interval}.jsonl"
-        label_1s=f"btc_candles_1hr_{interval}.jsonl"
-        path_1m = os.path.join(data_dir,label_1m)
-        path_1s=os.path.join(data_dir,label_1s)
+
+        prefix = "1hr" if interval == "1s" else "1day"
+        filename = f"btc_candles_{prefix}_{interval}.jsonl"
+
+        path = self.file_io.get_path(filename)
         candle_dict = df.to_dict(orient='records')[0]
+        
         await self.stratedgy_manager.handle_wss_df_from_data_distributor(df,interval)
-        if interval == '1m':
-           self.file_io.append_row_to_jsonl(path_1m,candle_dict)
-        if interval == '1s':
-            self.file_io.append_row_to_jsonl(path_1s,candle_dict)        
-        # print(f"This is from data distributor: {df}")
+        self.file_io.append_row_to_jsonl(path, candle_dict)
+
+    
+    async def distribute_persistant_binance_rest(self, df, interval, label):
+        pass
+
+
+    def _distribute_as_jsonl(self, df, filename, interval, label):
+        path = self.file_io.get_path(filename)
+        self.file_io.export_full_df_to_jsonl(df,path)
+        print(f"📦 Label: {label} | Interval: {interval} | Saved to: {path}")
 
 
    

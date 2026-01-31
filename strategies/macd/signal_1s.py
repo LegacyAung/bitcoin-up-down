@@ -38,22 +38,20 @@ class MacdSignals1s:
         }
         
     
-    def define_macd_hist_zero_crossover(self):
-        if len(self.df) < 2 : return
+    # def define_macd_hist_zero_crossover(self):
+    #     if len(self.df) < 2 : return
 
-        prev = self.df['histogram'].iloc[-2]
-        curr = self.df['histogram'].iloc[-1]
+    #     prev = self.df['histogram'].iloc[-2]
+    #     curr = self.df['histogram'].iloc[-1]
 
-        if prev < 0 and curr > 0 :
-            print("BULLISH_CROSS")
-            return "BULLISH_CROSS"
-        if prev > 0 and curr < 0 :
-            print("BEARISH_CROSS")
-            return "BEARISH_CROSS"
+    #     if prev < 0 and curr > 0 :
+    #         print("BULLISH_CROSS")
+    #         return "BULLISH_CROSS"
+    #     if prev > 0 and curr < 0 :
+    #         print("BEARISH_CROSS")
+    #         return "BEARISH_CROSS"
 
         
-    
-
     def define_macd_hist_velocity(self, period=3):
 
         if self.df is None or len(self.df) < period:
@@ -73,25 +71,8 @@ class MacdSignals1s:
         return "STABLE"
 
 
-    # def get_1s_trend_slope(self, lookback=20):
-    #     if len(self.df) < lookback: 
-    #         return 0
-            
-    #     y = self.df['histogram'].tail(lookback).values
-    #     x = np.arange(len(y))
-        
-    #     # Linear regression: returns [slope, intercept]
-    #     slope, intercept = np.polyfit(x, y, 1) 
-        
-        
-    #     if slope > 0:
-    #         print(f"🚀 BULLISH SLOPE: {slope:.6f} (1m candle warming up)")
-    #     elif slope < 0:
-    #         print(f"(BEAR BEARISH SLOPE: {slope:.6f} (1m candle cooling down)")
-    #     else:
-    #         print(f"flat FLAT SLOPE: {slope:.6f}")
-            
-    #     return slope
+   
+    
 
     def _get_no_1s_behind_current_time(self):
 

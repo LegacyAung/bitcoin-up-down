@@ -101,7 +101,6 @@ class StratedyManager:
                 # 1s signals
                 macd_signals1s = MacdSignals1s(df,interval,label)
                 hist = macd_signals1s.define_no_bull_bear_in_60s()
-                hist_zero_crossover = macd_signals1s.define_macd_hist_zero_crossover()
                 hist_velocity = macd_signals1s.define_macd_hist_velocity(period=5)
                 # slope = macd_signals1s.get_1s_trend_slope(lookback=60)
             
@@ -113,7 +112,7 @@ class StratedyManager:
                 # macd_hid_divergence = macd_signals1m.define_hidden_divergence(periods=20)
                 macd_hist_exhaustion = macd_signals1m.define_histogram_exhaustion(periods=3)
 
-            return hist_momentum, macd_hist_exhaustion, hist, hist_zero_crossover, hist_velocity
+            return hist_momentum, macd_hist_exhaustion, hist, hist_velocity
             
         except Exception as e:
             
