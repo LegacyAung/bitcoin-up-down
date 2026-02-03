@@ -3,79 +3,51 @@ import numpy as np
 import asyncio
 import json
 from utils.file_io import FileIO
+
+
 from .macd.macd import Macd
 from .macd.signal_1s import MacdSignals1s
 from .macd.signal_1m import MacdSignals1m
-# from .macd.signal_15m import MacdSignals15m
-
-
 
 
 class StratedyManager:
     def __init__(self):
         self.file_io = FileIO()
-        self.buffers = {
-            '1day_1m': pd.DataFrame(),
-            '1hr_1s': pd.DataFrame(),
-            '1day_15m': pd.DataFrame()
-        }
         
 
-    async def handle_rest_df_from_data_distributor(self, df, interval, label):
-        if df.empty: return
+    async def handle_rest_from_distributor(self, buffers, interval, label):
         
-        combined_df = await self._calculate_all_indicators(df)
+        buffer = buffers.get(label)
+
+        if buffer is None or buffer.empty:
+            print(f"❌ Error: No buffer data found for {label}")
+            return
         
-        combined_df = combined_df.dropna().copy()
-        max_rows = 900 if interval == '1s' else 1500
-        self.buffers[label] = combined_df.tail(max_rows).copy()
+        combined_df = await self._calculate_all_indicators(buffer)
 
-        target_path = self.file_io.get_path(filename=f"btc_strategy_{label}.jsonl")
-        self.file_io.export_full_df_to_jsonl(combined_df,target_path)
-
-
-    async def handle_wss_df_from_data_distributor(self,df, interval):
+        if combined_df is not None:
+            combined_df = combined_df.dropna().copy()
+            return combined_df
         
-        if df.empty: return
+        return None
+
+    async def handle_wss_from_distributor(self, buffers, interval, label):
+        buffer = buffers[label]
+
+        if buffer is None or buffer.empty : return None
         
-        label = "1hr_1s" if interval == '1s' else "1day_1m" if interval == '1m' else "1day_15m"
-        max_rows = 900 if interval == '1s' else 1500
-        buffer = self.buffers.get(label, pd.DataFrame())
+        df_with_indicators = await self._calculate_all_indicators(buffer)
 
-        if not buffer.empty:
-            last_ts = float(buffer.iloc[-1]['timestamp'])
-            curr_ts = float(df.iloc[0]['timestamp'])
-            step = 1000.0 if interval == '1s' else 60000.0
-            gap = curr_ts - last_ts
-            if (step * 1.5) < gap < (step * 30):
-                num_missing = int(round(gap / step)) - 1
-                if num_missing > 0:
-                    last_price = buffer.iloc[-1]['close']
-                    patch_ts = np.arange(last_ts + step, curr_ts, step)
-                    patch_df = pd.DataFrame({
-                        'timestamp': patch_ts,
-                        'close': last_price
-                    })
-                    buffer = pd.concat([buffer, patch_df], ignore_index=True)
-        combined = pd.concat([buffer, df], ignore_index=True).tail(max_rows).copy()
-        self.buffers[label] = combined
+        if df_with_indicators is not None and not df_with_indicators.empty:
 
-        if len(combined) < 50: return
+            new_row = df_with_indicators.iloc[-1].to_dict()
 
-        result_df = await self._calculate_all_indicators(combined)
-        if result_df is not None and not result_df.empty:
-            # Extract the most recent row as a dictionary
-            new_row = result_df.iloc[-1].to_dict()
+            await self._all_signals(df_with_indicators, interval, label)
 
-            # Clean up floats for faster I/O and smaller file size
-            new_row = {k: round(v, 4) if isinstance(v, float) else v for k, v in new_row.items()}
-            await self._all_signals(self.buffers[label],interval,label)
+            return new_row
+        
+        return None
 
-            # --- 4. ASYNC PERSISTENCE ---
-            target_path = self.file_io.get_path(filename=f"btc_strategy_{label}.jsonl")
-            asyncio.create_task(self._async_save(target_path, new_row))
-
-  
 
     async def _calculate_all_indicators(self, df):
         try:
@@ -108,8 +80,6 @@ class StratedyManager:
                 # 1m signals
                 macd_signals1m = MacdSignals1m(df,interval,label)
                 hist_momentum = macd_signals1m.define_histogram_momentum()
-                # macd_divergence = macd_signals1m.define_macd_divergence(periods=20)
-                # macd_hid_divergence = macd_signals1m.define_hidden_divergence(periods=20)
                 macd_hist_exhaustion = macd_signals1m.define_histogram_exhaustion(periods=3)
 
             return hist_momentum, macd_hist_exhaustion, hist, hist_velocity

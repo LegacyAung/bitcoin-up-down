@@ -1,6 +1,5 @@
 import asyncio
 
-
 from .data_fetcher import DataFetcher
 from .data_persistance import DataPersistance
 from .data_synthesizer import DataSynthesizer
@@ -20,6 +19,7 @@ class DataManager:
             {"mins": 1440, "interval": "15m", "label": "1day_15m", "symbol": "BTCUSDT"}
         ]
         self.binance_wss_params = ["btcusdt@kline_1m", "btcusdt@kline_1s"]
+        
 
     async def handle_binance_rest_data(self):
         for config in self.binance_rest_configs:
@@ -43,10 +43,14 @@ class DataManager:
         config = self.binance_rest_configs[2]
 
         while True:
-            df = await self.data_persistance.persistantly_get_binance_rest( 15, config['interval'], config['symbol'])
+            df = await self.data_persistance.persistantly_get_binance_rest(15, config['interval'], config['symbol'])
             
-            if df is not None:
-                await self.data_distributor.distribute_persistant_binance_rest(df, config['interval'], config['label'])
+            if df is not None and not df.empty:
+
+                closed_df = df.iloc[[0]] #taking the first row of the persistant df
+                
+                
+                await self.data_distributor.distribute_persistant_binance_rest(closed_df, config['interval'], config['label'])
                 print(f"🔄 Boss Updated: {config['label']} sync complete.")
 
             await asyncio.sleep(1)

@@ -23,15 +23,17 @@ class MarketManager:
             await self.clob_rest.authenticate()
             print("✅ Authentication Successful. Signer ready for L1.")
 
+            print("🚀 Starting PolyMarket Data Stream...")
+            print("🚀 Starting Binance Market Data Stream...")
+            wss_task = asyncio.create_task(self.data_manager.handle_wss_pipeline())
+            
             print("🚀 fetching Binance Rest data...")
-            await self.data_manager.handle_binance_rest_data()
+            asyncio.create_task(self.data_manager.handle_binance_rest_data())
 
             print("🔄 Starting Persistent 15m Heartbeat...")
             asyncio.create_task(self.data_manager.handle_persistant_15m_binance_rest())
 
-            print("🚀 Starting PolyMarket Data Stream...")
-            print("🚀 Starting Binance Market Data Stream...")
-            await self.data_manager.handle_wss_pipeline()
+            await wss_task
 
         except Exception as e:
             print(f"🛑 Failed to start market analyzer: {e}")

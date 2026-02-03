@@ -35,6 +35,9 @@ class BinanceRest:
                 break
             all_candles.extend(data)
             last_open_time = data[-1][0]
+
+            if last_open_time < current_start:
+                break
             current_start = last_open_time + step_ms
             #current_start = data[-1][6] + 1  #for 1s data[-1][0] + 1000
             time.sleep(0.1)
