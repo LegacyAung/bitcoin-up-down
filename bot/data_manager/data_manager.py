@@ -55,6 +55,25 @@ class DataManager:
 
             await asyncio.sleep(1)
 
+    async def handle_persistant_price_diff(self):
+        while True:
+            
+            current_buffers = self.data_distributor.buffers
+
+            price_gap = await self.data_persistance.persistantly_get_price_diff(
+                buffers = current_buffers,
+                label_1s = self.binance_rest_configs[0]['label'],
+                label_15m = self.binance_rest_configs[2]['label'],
+                mins = 15
+            ) 
+            
+            if price_gap is not None:
+                print(f"📊 Live Gap: {price_gap}")
+            await asyncio.sleep(1)
+
+
+
+
     async def _handle_binance_wss_data(self, msg):
         if 'k' not in msg:
             if 'result' in msg:

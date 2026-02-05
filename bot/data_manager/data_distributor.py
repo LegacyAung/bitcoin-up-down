@@ -36,7 +36,6 @@ class DataDistributor:
                 path = self.file_io.get_path(filename)
                 self.file_io.append_row_to_jsonl(path,enriched_row)
 
-        
     async def distribute_binance_rest(self, df, interval, label):
         if df.empty : return
         new_history = df.iloc[:-1].copy()
@@ -58,7 +57,25 @@ class DataDistributor:
             filename = f"btc_candles_indications_{label}.jsonl"
             self._distribute_as_jsonl(enriched_df, filename,interval,label)
             
-                
+    async def distribute_persistant_binance_rest(self, df, interval, label):
+        if df.empty : return
+        
+        current_buffer_15m = self.buffers.get(label, pd.DataFrame())
+        combined = pd.concat([current_buffer_15m, df], ignore_index=True)
+        combined = combined.drop_duplicates(subset=['timestamp'], keep='last').sort_values('timestamp')
+        self.buffers[label] = combined.tail(150)
+
+        enriched_15m_df = await self.stratedgy_manager.handle_rest_from_distributor(
+            buffers = self.buffers,
+            interval = interval,
+            label = label
+        )
+
+        if enriched_15m_df is not None:
+            self.buffers[label] = enriched_15m_df
+            filename = f"btc_candles_indications_{label}.jsonl"
+            self._distribute_as_jsonl(enriched_15m_df, filename,interval,label)
+
     def _distribute_as_jsonl(self, df, filename, interval, label):
         path = self.file_io.get_path(filename)
         self.file_io.export_full_df_to_jsonl(df,path)

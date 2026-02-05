@@ -33,6 +33,9 @@ class MarketManager:
             print("🔄 Starting Persistent 15m Heartbeat...")
             asyncio.create_task(self.data_manager.handle_persistant_15m_binance_rest())
 
+            print("🔄 Starting Persistent Price Difference (Price to beat)")
+            asyncio.create_task(self.data_manager.handle_persistant_price_diff())
+
             await wss_task
 
         except Exception as e:

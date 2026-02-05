@@ -1,16 +1,17 @@
 import asyncio
 
+
 from ..time_manager.time_manager import TimeManager
 from .data_fetcher import DataFetcher
 from .data_synthesizer import DataSynthesizer
-from .data_distributor import DataDistributor
+
 
 class DataPersistance:
     def __init__(self):
         self.time_manager = TimeManager()
         self.data_fetcher = DataFetcher()
         self.data_synthesizer = DataSynthesizer()
-        self.data_distributor = DataDistributor()
+        
 
     async def persistantly_get_binance_rest(self,mins,interval,symbol):
         min_to_sec = mins * 60
@@ -24,13 +25,30 @@ class DataPersistance:
 
         return None
     
-    async def persistantly_get_price_diff(self, df_1s, df_15, mins):
+    async def persistantly_get_price_diff(self, buffers, label_1s, label_15m, mins):
         min_to_sec = mins * 60
         time_data = self.time_manager.handle_time_persistance(min_to_sec)
+
         delta = time_data.get('delta_sec')
 
-        if df_1s or df_15 is None: return None
+        
 
+        df_1s = buffers.get(label_1s)
+        df_15m = buffers.get(label_15m)
+
+        if df_1s is None or df_1s.empty or df_15m is None or df_15m.empty:
+            return None
+        
+        current_1s_price = df_1s.iloc[-1]['close']
+        last_15m_price = df_15m.iloc[-1]['close']
+
+        
+        price_diff = round(current_1s_price - last_15m_price, 3)
+
+        return price_diff
+
+    
+    
 
 
 
@@ -39,15 +57,6 @@ class DataPersistance:
 
 
     
-
-
-
-
-
-
-
-
-
 
 async def main():
     dp = DataPersistance()
