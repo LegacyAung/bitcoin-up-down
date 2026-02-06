@@ -4,6 +4,7 @@ import time
 
 from api.clob.clob_rest import ClobRest
 from .data_manager.data_manager import DataManager
+from .time_manager.time_manager import TimeManager
 
 
 
@@ -11,6 +12,7 @@ class MarketManager:
     def __init__(self):
         self.clob_rest = ClobRest()
         self.data_manager = DataManager()
+        self.time_manager = TimeManager()
         self.last_msg_time = time.time()
         self.is_running = True
 

@@ -26,13 +26,6 @@ class DataPersistance:
         return None
     
     async def persistantly_get_price_diff(self, buffers, label_1s, label_15m, mins):
-        min_to_sec = mins * 60
-        time_data = self.time_manager.handle_time_persistance(min_to_sec)
-
-        delta = time_data.get('delta_sec')
-
-        
-
         df_1s = buffers.get(label_1s)
         df_15m = buffers.get(label_15m)
 

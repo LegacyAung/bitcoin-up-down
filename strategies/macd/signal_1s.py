@@ -24,11 +24,11 @@ class MacdSignals1s:
 
         net_bias = bull_weight - bear_weight
         
-        print(f"[{self.label}] Elapsed: {elapsed}s")
-        print("hist_1s: ", self.df['histogram'].iloc[-1])
-        print(f"Bullish: {bull_secs_count}s (Weight: {bull_weight:.4f})")
-        print(f"Bearish: {bear_secs_count}s (Weight: {bear_weight:.4f})")
-        print(f"Net Bias: {net_bias:.4f}")
+        # print(f"[{self.label}] Elapsed: {elapsed}s")
+        # print("hist_1s: ", self.df['histogram'].iloc[-1])
+        # print(f"Bullish: {bull_secs_count}s (Weight: {bull_weight:.4f})")
+        # print(f"Bearish: {bear_secs_count}s (Weight: {bear_weight:.4f})")
+        # print(f"Net Bias: {net_bias:.4f}")
 
         return {
             "bull_weight": bull_weight,
@@ -62,12 +62,12 @@ class MacdSignals1s:
 
         velocity = np.diff(diffs)
         if all(v > 0 for v in velocity):
-            print("ACCELERATING_UP") 
+            # print("ACCELERATING_UP") 
             return "ACCELERATING_UP"
         if all(v < 0 for v in velocity):
-            print("ACCELERATING_DOWN") 
+            # print("ACCELERATING_DOWN") 
             return "ACCELERATING_DOWN"
-        print("STABLE")
+        # print("STABLE")
         return "STABLE"
 
 

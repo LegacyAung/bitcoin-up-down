@@ -14,21 +14,21 @@ class MacdSignals1m:
         diffs = np.diff(recent_hist)
         if all(d > 0 for d in diffs):
         # Even if values are -0.2, if they are rising, it's 
-            print("----------------------------------------------1m-------------------------------------------------")
-            print("------------BULLISH-----------")
-            print("----------------------------------------------1m-------------------------------------------------")
+            # print("----------------------------------------------1m-------------------------------------------------")
+            # print("------------BULLISH-----------")
+            # print("----------------------------------------------1m-------------------------------------------------")
             return "BULLISH"
     
         elif all(d < 0 for d in diffs):
         # Even if values are +0.5, if they are falling, it's BEARISH
-            print("----------------------------------------------1m-------------------------------------------------")
-            print("-----------BEARISH------------")
-            print("----------------------------------------------1m-------------------------------------------------")
+            # print("----------------------------------------------1m-------------------------------------------------")
+            # print("-----------BEARISH------------")
+            # print("----------------------------------------------1m-------------------------------------------------")
             return "BEARISH"
         
-        print("----------------------------------------------1m-------------------------------------------------")
-        print("-----------NEUTRAL------------")
-        print("----------------------------------------------1m-------------------------------------------------")
+        # print("----------------------------------------------1m-------------------------------------------------")
+        # print("-----------NEUTRAL------------")
+        # print("----------------------------------------------1m-------------------------------------------------")
         return "NEUTRAL"
     
     # def define_macd_divergence(self, periods=20):
@@ -119,15 +119,15 @@ class MacdSignals1m:
         # BULLISH EXHAUSTION (Top of a green move)
         # Prev bars were increasing, but current bar is smaller
         if hist[-2] > 0 and hist[-1] < hist[-2] and hist[-2] > hist[-3]:
-            print("----------------------------------------------1m-------------------------------------------------")
-            print(f"[{self.label}] ⚠️ BULLISH EXHAUSTION (Momentum Peaking)")
+            # print("----------------------------------------------1m-------------------------------------------------")
+            # print(f"[{self.label}] ⚠️ BULLISH EXHAUSTION (Momentum Peaking)")
             return "BULL_EXHAUSTION"
             
         # BEARISH EXHAUSTION (Bottom of a red move)
         # Prev bars were decreasing (more negative), but current is less negative
         if hist[-2] < 0 and hist[-1] > hist[-2] and hist[-2] < hist[-3]:
-            print("----------------------------------------------1m-------------------------------------------------")
-            print(f"[{self.label}] ⚠️ BEARISH EXHAUSTION (Sellers Exhausted)")
+            # print("----------------------------------------------1m-------------------------------------------------")
+            # print(f"[{self.label}] ⚠️ BEARISH EXHAUSTION (Sellers Exhausted)")
             return "BEAR_EXHAUSTION"
 
         return "NEUTRAL"

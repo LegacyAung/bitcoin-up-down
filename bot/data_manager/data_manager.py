@@ -87,7 +87,24 @@ class DataManager:
                 await self.data_distributor.distribute_binance_wss(df=df, interval=interval)
 
     async def _handle_clob_wss_data(self, msg):
-        pass
+        
+        events = msg if isinstance(msg, list) else [msg]
+
+        for event in events:
+            e_type = event.get("event_type")
+            if not e_type: continue
+
+            method_name = f"synthesize_raw_clob_wss_{e_type}"
+            handler = getattr(self.data_synthesizer, method_name)
+
+            if not handler: return
+
+            if e_type == "new_market":
+                df = await handler(event)
+                print("🆕new market scouter: ",df)
+
+            
+
 
 
 
