@@ -1,6 +1,6 @@
 import time
 from datetime import timedelta
-from utils.time import get_market_window_timestamps, get_current_time_et, get_current_time_utc
+from utils.time import  get_current_time_et, get_current_time_utc
 
 class TimePersistance:
     def __init__(self):

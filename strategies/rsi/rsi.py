@@ -33,9 +33,6 @@ class Rsi:
         rs = avg_gain / avg_loss
         self.df['rsi'] = 100 - (100 / (1 + rs))
 
-        # 2. RSI-Based Moving Average (Signal Line)
-        # Using SMA for the RSI-MA is standard, but you can use EMA as well
-        
         # EMA  
         self.df['rsi_ma'] = self.df['rsi'].ewm(span=self.ma_period, adjust=False).mean()
         

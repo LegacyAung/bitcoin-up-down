@@ -4,6 +4,70 @@ from config import CLOB_WEBSOCKET
 from .clob_service import ClobService 
 from ..gamma.gamma_rest import fetch_current_event_slug
 
+class ClobWss2:
+    def __init__(self, clob_ids, condition_id, channels):
+        self.clob_services = ClobService()
+        self.wss_url = f"{CLOB_WEBSOCKET}/ws/market"
+        
+        self.clob_ids = clob_ids
+        self.condition_id = condition_id
+        self.channels = channels
+
+        # state management
+        self.is_running = False
+        self.last_callback = None
+
+    async def disconnect(self):
+        """
+        Gracefully stops the stream and prevents automatic reconnection.
+        """
+        print("🔌 Disconnecting WebSocket...")
+        self.is_running = False  # Critical: stops the reconnect loop
+        try:
+            await self.clob_services.close_clob_wss()
+        except Exception as e:
+            print(f"⚠️ Error during disconnect: {e}")
+        print("✅ WebSocket disconnected.")
+
+    async def reconnect(self):
+        """
+        Closes existing connection and restarts the stream 
+        using the previously saved callback.
+        """
+        print("🔄 Connection lost or stale. Attempting to reconnect...")
+        self.is_running = False
+        await asyncio.sleep(2) 
+        if self.last_callback:
+            await self.stream_market_data(self.last_callback)
+
+    async def stream_market_data(self, callback):
+        """
+        Generic method to stream any combination of public channels.
+        Supported channels: ["book", "price_change", "last_trade_price", "best_bid_ask", "tick_size_change", "new_market", "market_resolved"]
+        """
+
+        self.last_callback = callback
+        self.is_running = True
+
+        subscribe_msg = {
+            "type": "subscribe",
+            "assets_ids": self.clob_ids,  # Subscribes to both Up and Down
+            "channels": self.channels
+        }
+
+        print(f"🚀 Streaming Channels: {self.channels}")
+
+        try:
+            await self.clob_services.stream_clob_wss(
+                url = self.wss_url,
+                subscribe_msg=subscribe_msg,
+                callback=callback
+            )
+        except Exception as e:
+            if self.is_running:
+                await self.reconnect()
+
+
 class ClobWss:
     def __init__(self):
         # 1. Initialize Service and API Config

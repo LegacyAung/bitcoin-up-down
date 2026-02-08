@@ -30,7 +30,7 @@ class DataManager:
             await self.data_distributor.distribute_binance_rest(
                 df, config['interval'], config['label'] 
             )
-
+    
     async def handle_wss_pipeline(self):
         await asyncio.gather(
             self.data_fetcher.fetch_binance_wss(
@@ -38,6 +38,14 @@ class DataManager:
             ),
             self.data_fetcher.fetch_clob_wss(self._handle_clob_wss_data)
         )
+    
+    async def handle_binance_wss_pipeline(self):
+        await self.data_fetcher.fetch_binance_wss(
+            self.binance_wss_params, self._handle_clob_wss_data
+        )
+
+    async def handle_clob_wss_pipeline(self):
+        await self.data_fetcher.fetch_clob_wss(self._handle_clob_wss_data)
 
     async def handle_persistant_15m_binance_rest(self):
         config = self.binance_rest_configs[2]

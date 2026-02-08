@@ -7,7 +7,7 @@ EVENTS_GAMMA_ENDPOINT = EVENTS_GAMMA_ENDPOINT
 TIMEOUT = 10
 
 
-def fetch_event_slug(active=bool,closed=str,timestamp=str):
+def fetch_event_slug(active=bool,closed=bool,timestamp=str):
     url = EVENTS_GAMMA_ENDPOINT + BTC_UPDOWN_15M + f"-{timestamp}"
     params = {
         "active":str(active).lower(),

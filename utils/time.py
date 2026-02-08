@@ -8,6 +8,10 @@ def get_current_time_utc():
     current_utc = int(now.timestamp())
     return current_utc
 
+def get_end_timestamp_bot_workhours(current_utc, secs): #give bot working hours in second example: 6 hours = 21600 seconds
+    end_timestamp_utc = current_utc + secs
+    return end_timestamp_utc
+
 
 # -----------------ET TIME-----------------------#
 #current time in Unix timestamp and et time
@@ -45,6 +49,8 @@ def get_market_window_timestamps():
         str(int(middle_step.timestamp())), # Current (Middle)
         str(int(next_step.timestamp()))    # Next
     ]
+
+
 
 
 # will get unix timestamps of previous 24 hr starting from current timestamp 15min window
