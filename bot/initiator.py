@@ -29,13 +29,6 @@ class Initiator:
                     break
 
                 self.is_running = True
-                # output = (
-                #     f"\033[3A" 
-                #     f"End Timestamp:     {self.end_ts_utc}\033[K"
-                #     f"Current Timestamp: {self.current_ts_utc}\033[K\n"
-                # )
-                
-                # print(output, end="", flush=True)
                 await asyncio.sleep(1)
                 
         finally:

@@ -4,6 +4,7 @@ from .data_fetcher import DataFetcher
 from .data_persistance import DataPersistance
 from .data_synthesizer import DataSynthesizer
 from .data_distributor import DataDistributor
+from .data_config import MarketConfig
 
 
 class DataManager:
@@ -13,12 +14,13 @@ class DataManager:
         self.data_persistance = DataPersistance()
         self.data_synthesizer = DataSynthesizer()
         self.data_distributor = DataDistributor()
-        self.binance_rest_configs = [
-            {"mins": 15,  "interval": "1s",  "label": "1hr_1s", "symbol": "BTCUSDT"},
-            {"mins": 1440, "interval": "1m",  "label": "1day_1m", "symbol": "BTCUSDT"},
-            {"mins": 1440, "interval": "15m", "label": "1day_15m", "symbol": "BTCUSDT"}
-        ]
-        self.binance_wss_params = ["btcusdt@kline_1m", "btcusdt@kline_1s"]
+        self.data_config = MarketConfig()
+
+
+        self.binance_rest_configs = self.data_config.binance_rest 
+        self.binance_wss_params = self.data_config.binance_wss
+        self.clob_wss_channels = self.data_config.clob_wss   
+        
         
 
     async def handle_binance_rest_data(self):
@@ -44,8 +46,9 @@ class DataManager:
             self.binance_wss_params, self._handle_clob_wss_data
         )
 
-    async def handle_clob_wss_pipeline(self):
-        await self.data_fetcher.fetch_clob_wss(self._handle_clob_wss_data)
+    async def handle_clob_wss_pipeline(self, slug_timestamp):
+        sub_msg = await self._handle_gamma_rest_submsg(slug_timestamp=slug_timestamp)
+        await self.data_fetcher.fetch_clob_wss(self._handle_clob_wss_data, sub_msg=sub_msg)
 
     async def handle_persistant_15m_binance_rest(self):
         config = self.binance_rest_configs[2]
@@ -111,9 +114,9 @@ class DataManager:
                 df = await handler(event)
                 print("🆕new market scouter: ",df)
 
-            
-
-
+    async def _handle_gamma_rest_submsg(self, slug_timestamp):
+        return await self.data_fetcher.fetch_submsg_clob_wss(timestamp=slug_timestamp, channels=self.clob_wss_channels)
+        
 
 
 

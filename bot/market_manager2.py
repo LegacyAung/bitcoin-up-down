@@ -14,15 +14,20 @@ class MarketManager:
         
 
         self.is_running = False
-        self.delta_sec = None
         self.is_initialized = False
+        self.delta_sec = 0
         self.res_count = 0
+        
+        self.active_clob_streams = set()
+        self.rolling_timestamps = {'current': "", 'next': ""}
+        
 
     async def market_starter(self):
         if self.is_initialized:
             return
         
         self.is_initialized = True
+        self.is_running = True
         print("🔐 Initializing L1/L2 Authentication...")
 
         try:
@@ -52,34 +57,68 @@ class MarketManager:
             self.is_initialized = False
             print(f"🛑 Failed to start market analyzer: {e}")
 
-        self.is_running = True
+        
 
     async def market_disconnector(self):
         print("\n🛑 Initiating Shutdown...")
 
+        
 
     
     
     
-    async def _dya_clob_wss_monitor(self):
-        while self.is_running:
-            self.delta_sec = self._get_delta_sec()
+    async def _dynamic_clob_wss_monitor(self):
+        self.rolling_timestamps['current'] = self._get_curr_res_ts()
+        self.rolling_timestamps['next'] = self._get_next_res_ts()
 
-            pass
+        while True:
+            try: 
+                self.delta_sec = self._get_delta_sec()
+                if self.delta_sec == 0:
+                    self.rolling_timestamps['current'] = self._get_curr_res_ts()
+                    self.rolling_timestamps['next'] = self._get_next_res_ts()    
 
+                if self.delta_sec <= 30:
+                    await self._manage_clob_wss(action='stop', slug_timestamp=self.rolling_timestamps.get('current'), status="current")
+                elif self.delta_sec <= 300:
+                    await self._manage_clob_wss(action='start', slug_timestamp=self.rolling_timestamps.get('next'), status="next")
+                else:
+                    await self._manage_clob_wss(action='start', slug_timestamp=self.rolling_timestamps.get('current'), status="current" )
+ 
+            except Exception as e:
+                print(f"⚠️ Monitor Error: {e}")
+                await asyncio.sleep(5)
 
-    
+    async def _manage_clob_wss(self, action, slug_timestamp, status):
+        
+        if action == "start":
+            if slug_timestamp not in self.active_clob_streams:
+                self.active_clob_streams.add(slug_timestamp)
+                asyncio.create_task(
+                    self.data_manager.handle_clob_wss_pipeline(slug_timestamp=slug_timestamp)
+                )
+                print(f"starting clob wss:  {status} and slug_timestamp  {slug_timestamp}")
+
+        if action == "stop":
+            if slug_timestamp in self.active_clob_streams:
+                self.active_clob_streams.remove(slug_timestamp)
+                print(f"stopping clob wss: {status} and slug_timestamp: {slug_timestamp}")
+
     def _get_delta_sec(self):
         countdown_15m = self.time_manager.handle_time_persistance(res_sec=900) 
         return countdown_15m.get('delta_sec')
 
-    def _get_next_resolution_timestamp(self):
+    def _get_next_res_ts(self):
         next_res_ts = self.time_manager.get_next_res_ts()
         return next_res_ts
-
+    
+    def _get_curr_res_ts(self):
+        curr_res_ts = self.time_manager.get_curr_res_ts()
+        return curr_res_ts
 
 
 
 if __name__ == "__main__":
     market_manager = MarketManager()
-    asyncio.run(market_manager.market_starter())
+    asyncio.run(market_manager._dynamic_clob_wss_monitor())
+
