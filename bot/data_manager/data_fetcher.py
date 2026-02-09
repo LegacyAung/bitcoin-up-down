@@ -49,12 +49,17 @@ class DataFetcher:
 
             
 
+async def callback(msg):
+    print(msg)
 
 
 
+async def main(callback):
+    data_fetcher = DataFetcher()
+    params = ['btcusdt@kline_1m', 'btcusdt@kline_1s']
+    await data_fetcher.fetch_clob_wss(params = params, callback=callback)
 
-def main():
-    pass
+    
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main(callback))

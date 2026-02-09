@@ -35,13 +35,12 @@ class MarketManager:
             await self.clob_rest.authenticate()
             print("✅ Authentication Successful. Signer ready for L1.")
 
-            # print("🚀 Starting Binance & PolyMarket WSS Streams...")
-            # binance_task = asyncio.create_task(self.data_manager.handle_binance_wss_pipeline())
-            # clob_task = asyncio.create_task(self.data_manager.handle_clob_wss_pipeline())
+            print("🚀 Starting Binance WSS Stream...")
+            binance_task = asyncio.create_task(self.data_manager.handle_binance_wss_pipeline())
+            #clob_task = asyncio.create_task(self.data_manager.handle_clob_wss_pipeline())
 
-            print("🚀 Starting PolyMarket Data Stream...")
-            print("🚀 Starting Binance Market Data Stream...")
-            wss_task = asyncio.create_task(self.data_manager.handle_wss_pipeline())
+            # print("🚀 Starting PolyMarket Data Stream...")
+            # wss_task = asyncio.create_task(self.data_manager.handle_wss_pipeline())
             
             print("🚀 fetching Binance Rest data...")
             asyncio.create_task(self.data_manager.handle_binance_rest_data())
@@ -52,7 +51,7 @@ class MarketManager:
             print("🔄 Starting Persistent Price Difference (Price to beat)")
             asyncio.create_task(self.data_manager.handle_persistant_price_diff())
 
-            await wss_task
+            await binance_task
         except Exception as e:
             self.is_initialized = False
             print(f"🛑 Failed to start market analyzer: {e}")
@@ -63,10 +62,6 @@ class MarketManager:
         print("\n🛑 Initiating Shutdown...")
 
         
-
-    
-    
-    
     async def _dynamic_clob_wss_monitor(self):
         self.rolling_timestamps['current'] = self._get_curr_res_ts()
         self.rolling_timestamps['next'] = self._get_next_res_ts()
@@ -120,5 +115,5 @@ class MarketManager:
 
 if __name__ == "__main__":
     market_manager = MarketManager()
-    asyncio.run(market_manager._dynamic_clob_wss_monitor())
+    asyncio.run(market_manager.market_starter())
 

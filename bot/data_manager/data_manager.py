@@ -26,11 +26,11 @@ class DataManager:
     async def handle_binance_rest_data(self):
         for config in self.binance_rest_configs:
             raw_data = await self.data_fetcher.fetch_binance_rest(
-                config['mins'], config['interval'], config['symbol']
+                config.mins, config.interval, config.symbol
             )
             df = await self.data_synthesizer.synthesize_raw_binance_rest_data(raw_data)
             await self.data_distributor.distribute_binance_rest(
-                df, config['interval'], config['label'] 
+                df, config.interval, config.label 
             )
     
     async def handle_wss_pipeline(self):
@@ -42,8 +42,9 @@ class DataManager:
         )
     
     async def handle_binance_wss_pipeline(self):
+        
         await self.data_fetcher.fetch_binance_wss(
-            self.binance_wss_params, self._handle_clob_wss_data
+            self.binance_wss_params, self._handle_binance_wss_data
         )
 
     async def handle_clob_wss_pipeline(self, slug_timestamp):
@@ -54,15 +55,15 @@ class DataManager:
         config = self.binance_rest_configs[2]
 
         while True:
-            df = await self.data_persistance.persistantly_get_binance_rest(15, config['interval'], config['symbol'])
+            df = await self.data_persistance.persistantly_get_binance_rest(15, config.interval, config.symbol)
             
             if df is not None and not df.empty:
 
                 closed_df = df.iloc[[0]] #taking the first row of the persistant df
                 
                 
-                await self.data_distributor.distribute_persistant_binance_rest(closed_df, config['interval'], config['label'])
-                print(f"🔄 Boss Updated: {config['label']} sync complete.")
+                await self.data_distributor.distribute_persistant_binance_rest(closed_df, config.interval, config.label)
+                print(f"🔄 Boss Updated: {config.label} sync complete.")
 
             await asyncio.sleep(1)
 
@@ -73,8 +74,8 @@ class DataManager:
 
             price_gap = await self.data_persistance.persistantly_get_price_diff(
                 buffers = current_buffers,
-                label_1s = self.binance_rest_configs[0]['label'],
-                label_15m = self.binance_rest_configs[2]['label'],
+                label_1s = self.binance_rest_configs[0].label,
+                label_15m = self.binance_rest_configs[2].label,
                 mins = 15
             ) 
             
@@ -96,7 +97,7 @@ class DataManager:
             if df is not None:
                 interval = kline.get('i')
                 await self.data_distributor.distribute_binance_wss(df=df, interval=interval)
-
+                
     async def _handle_clob_wss_data(self, msg):
         
         events = msg if isinstance(msg, list) else [msg]
@@ -123,7 +124,8 @@ class DataManager:
 
 
 async def main():
-    pass
+    data_manager = DataManager()
+    await data_manager.handle_binance_wss_pipeline()
 
 if __name__ == "__main__":
     asyncio.run(main())
