@@ -1,157 +1,115 @@
 import asyncio
-import json
 from config import CLOB_WEBSOCKET
-from .clob_service import ClobService 
-from ..gamma.gamma_rest import fetch_current_event_slug
+from ..websocket_services import WebsocketService
 
-class ClobWss2:
-    def __init__(self, clob_ids, condition_id, channels):
-        self.clob_services = ClobService()
-        self.wss_url = f"{CLOB_WEBSOCKET}/ws/market"
-        
-        self.clob_ids = clob_ids
-        self.condition_id = condition_id
-        self.channels = channels
-
-        # state management
-        self.is_running = False
-        self.last_callback = None
-
-    async def disconnect(self):
-        """
-        Gracefully stops the stream and prevents automatic reconnection.
-        """
-        print("🔌 Disconnecting WebSocket...")
-        self.is_running = False  # Critical: stops the reconnect loop
-        try:
-            await self.clob_services.close_clob_wss()
-        except Exception as e:
-            print(f"⚠️ Error during disconnect: {e}")
-        print("✅ WebSocket disconnected.")
-
-    async def reconnect(self):
-        """
-        Closes existing connection and restarts the stream 
-        using the previously saved callback.
-        """
-        print("🔄 Connection lost or stale. Attempting to reconnect...")
-        self.is_running = False
-        await asyncio.sleep(2) 
-        if self.last_callback:
-            await self.stream_market_data(self.last_callback)
-
-    async def stream_market_data(self, callback):
-        """
-        Generic method to stream any combination of public channels.
-        Supported channels: ["book", "price_change", "last_trade_price", "best_bid_ask", "tick_size_change", "new_market", "market_resolved"]
-        """
-
-        self.last_callback = callback
-        self.is_running = True
-
-        subscribe_msg = {
-            "type": "subscribe",
-            "assets_ids": self.clob_ids,  # Subscribes to both Up and Down
-            "channels": self.channels
-        }
-
-        print(f"🚀 Streaming Channels: {self.channels}")
-
-        try:
-            await self.clob_services.stream_clob_wss(
-                url = self.wss_url,
-                subscribe_msg=subscribe_msg,
-                callback=callback
-            )
-        except Exception as e:
-            if self.is_running:
-                await self.reconnect()
 
 
 class ClobWss:
-    def __init__(self):
-        # 1. Initialize Service and API Config
-        self.clob_services = ClobService()
-        self.wss_url = f"{CLOB_WEBSOCKET}/ws/market"
-        
+    def __init__(self, channel_type, sub_msg_payload, condition_id, callback):
 
-        self._current_event = self._get_current_event_slug()
-        self.current_market = self._current_event['markets'][0]
-        self.clob_ids = json.loads(self.current_market['clobTokenIds'])
-        self.condition_id = self.current_market['conditionId']
-        self.channels = [
-            "book", 
-            "price_change", 
-            "last_trade_price", 
-            "best_bid_ask", 
-            "tick_size_change", 
-            "new_market", 
-            "market_resolved"
-        ]
-
-        # state management
-        self.is_running = False
-        self.last_callback = None
-
-
-    def _get_current_event_slug(self):
-        return fetch_current_event_slug()
-
-
-    async def reconnect(self):
-        """
-        Closes existing connection and restarts the stream 
-        using the previously saved callback.
-        """
-        print("🔄 Connection lost or stale. Attempting to reconnect...")
-        # 1. Clean up (The service layer should handle closing the actual socket)
-        self.is_running = False
-        await asyncio.sleep(2) # Short buffer to avoid rapid-fire looping
-        # 2. Restart the stream
-        if self.last_callback:
-            await self.stream_market_data(self.last_callback)
-
-    async def disconnect(self):
-        """
-        Gracefully stops the stream and prevents automatic reconnection.
-        """
-        print("🔌 Disconnecting WebSocket...")
-        self.is_running = False  # Critical: stops the reconnect loop
-        try:
-            await self.clob_services.close_clob_wss()
-        except Exception as e:
-            print(f"⚠️ Error during disconnect: {e}")
-        print("✅ WebSocket disconnected.")
-
-# --- CLOB WSS Data Streaming Starter ---
-    async def stream_market_data(self,callback):
-        self.last_callback = callback
-        self.is_running = True
-
-        """
-        Generic method to stream any combination of public channels.
-        Supported channels: ["book", "price_change", "last_trade_price", "best_bid_ask", "tick_size_change", "new_market", "market_resolved"]
-        """
-        subscribe_msg = {
-            "type": "subscribe",
-            "assets_ids": self.clob_ids,  # Subscribes to both Up and Down
-            "channels": self.channels
-        }
-
-        print(f"🚀 Streaming Channels: {self.channels}")
-
-        try:
-            await self.clob_services.stream_clob_wss(
-                url = self.wss_url,
-                subscribe_msg=subscribe_msg,
-                callback=callback
-            )
-        except Exception as e:
-            if self.is_running:
-                await self.reconnect()
+        self.channel_type = channel_type.lower()
+        self.sub_msg_payload = sub_msg_payload
+        self.condition_id = condition_id
+        self.callback = callback
+        self.wss_url = f"{CLOB_WEBSOCKET}/ws/{self.channel_type}" 
 
         
+        self.task = None
+
+        
+        self.service = WebsocketService(
+            url = self.wss_url,
+            payload = self.sub_msg_payload,
+            callback = self.callback
+        )
+
+    async def connect_clob_wss(self):
+        """Starts the service in the background and returns the task."""
+        if self.task and not self.task.done():
+            return self.task
+        print(f"📡 Starting CLOB {self.channel_type} for {self.condition_id}...")
+        self.task = asyncio.create_task(self.service.connect())
+        return self.task
+
+    
+    async def disconnect_clob_wss(self):
+        """Uses your WebsocketService methods to shut down cleanly."""
+        if not self.task:
+            return
+        self.service.stop()
+        await self.service.disconnect()
+        if not self.task.done():
+            self.task.cancel()
+            try:
+                await self.task
+            except asyncio.CancelledError:
+                pass
+        
+        print(f"✅ {self.condition_id} fully disconnected.")
+
+
+
+
+
+# class ClobWss:
+#     def __init__(
+#             self,
+#             channel_type: str,
+#             sub_msg_payload: dict,
+#             condition_id: str,
+#             callback: callable
+#         ):
+        
+#         self.channel_type = channel_type.lower()
+#         self.sub_msg_payload = sub_msg_payload
+#         self.condition_id = condition_id
+#         self.callback = callback
+
+#         self.wss_url = f"{CLOB_WEBSOCKET}/ws/{self.channel_type}" 
+
+#         self.is_running = False
+#         self.active_connections = {}
+        
+        
+
+#         self.service = WebsocketService(
+#             url = self.wss_url,
+#             payload = self.sub_msg_payload,
+#             callback = self.callback
+#         )
+
+#     async def connect_clob_wss(self):
+#         self.is_running = True
+#         if self.condition_id in self.active_connections:
+#             print(f"⚠️ {self.condition_id} is already running.")
+#             return
+
+#         print(f"📡 Starting CLOB {self.channel_type} for {self.condition_id}...")
+#         task = asyncio.create_task(self.service.connect())
+#         self.active_connections[self.condition_id] = task
+#         try:
+#             await task
+#         except asyncio.CancelledError:
+#             print(f"🛑 Task for {self.condition_id} was cancelled.")
+#         finally:
+#             self.active_connections.pop(self.condition_id, None)
+
+#     async def disconnect_clob_wss(self, condition_id):
+#         if condition_id in self.active_connections:
+#             self.service.stop()
+#             task = self.active_connections.get(condition_id)
+#             if task:
+#                 task.disconnect()
+#                 try:
+#                     await task
+#                 except asyncio.CancelledError:
+#                     print(f"✅ {self.condition_id} task fully cleaned up.")
+#             self.active_connections.pop(self.condition_id, None)
+
+
 
 
 if __name__ == "__main__":
-    pass
+    
+    async def main():
+        pass

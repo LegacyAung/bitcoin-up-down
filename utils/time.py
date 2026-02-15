@@ -29,31 +29,32 @@ def get_market_window_timestamps():
     current_time_dict = get_current_time_et()
     current_et = current_time_dict.get('default')
 
-    # 1. Calculate the "Middle" (Current Active Interval)
-    # Example: 12:48 becomes 12:45
+    
     middle_step = current_et.replace(
         minute=(current_et.minute // 15) * 15, 
         second=0, 
         microsecond=0
     )
 
-    # 2. Calculate the "Previous" (15 mins before middle)
+    
     prev_step = middle_step - timedelta(minutes=15)
 
-    # 3. Calculate the "Next" (15 mins after middle)
     next_step = middle_step + timedelta(minutes=15)
 
-    # Convert all to string UNIX timestamps
+    next_next_step = middle_step + timedelta(minutes=30)
+
+    
     return [
         str(int(prev_step.timestamp())),   # Previous
         str(int(middle_step.timestamp())), # Current (Middle)
-        str(int(next_step.timestamp()))    # Next
+        str(int(next_step.timestamp())),   # Next
+        str(int(next_next_step.timestamp())) # Next_next
     ]
 
 
+data = get_market_window_timestamps()
+print(data)
 
-
-# will get unix timestamps of previous 24 hr starting from current timestamp 15min window
 def get_prev_24hr_timestamps():
     market_window_timestamps = get_market_window_timestamps()
     current_market_timestamp = int(market_window_timestamps[1])
@@ -66,7 +67,6 @@ def get_prev_24hr_timestamps():
     return prev_24hr_timestamps
 
 
-# get binance time range in millisecond timestamps
 def get_binance_time_range(days):
     end_time = int(time.time() * 1000)
     start_time = end_time - (days * 24 * 60 * 60 * 1000)
@@ -80,13 +80,10 @@ def get_binance_time_range_in_hours(hrs):
     return start_time, end_time
 
 
-
-
 def get_binance_time_range_in_mins(mins):
     end_time = int(time.time() * 1000)
     start_time = end_time - (mins * 60 * 1000)
     return start_time, end_time
-
 
 
 def get_time_windows_in_unix():

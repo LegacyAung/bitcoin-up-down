@@ -13,19 +13,20 @@ class DataPersistance:
         self.data_synthesizer = DataSynthesizer()
         
 
-    async def persistantly_get_binance_rest(self,mins,interval,symbol):
+    async def persistantly_get_binance_rest(self,mins,interval,symbol, delta_sec):
         min_to_sec = mins * 60
         min_for_binance_rest = mins * 2
         time_data = self.time_manager.handle_time_persistance(min_to_sec)
 
-        delta = time_data.get('delta_sec')
+        
+        delta = delta_sec
         if delta == 0 or delta >= (min_to_sec - 1):
             raw_data = await self.data_fetcher.fetch_binance_rest(min_for_binance_rest,interval,symbol)
             return await self.data_synthesizer.synthesize_raw_binance_rest_data(raw_data)
 
         return None
     
-    async def persistantly_get_price_diff(self, buffers, label_1s, label_15m, mins):
+    async def persistantly_get_price_diff(self, buffers, label_1s, label_15m):
         df_1s = buffers.get(label_1s)
         df_15m = buffers.get(label_15m)
 

@@ -5,72 +5,62 @@ import json
 from config import CLOB_ENDPOINT, CHAIN_ID, PRIVATE_KEY, FUNDER_ADDRESS
 from py_clob_client.client import ClobClient
 from py_clob_client.client import ApiCreds
-from py_clob_client.clob_types import BalanceAllowanceParams, AssetType
-from .clob_service import ClobService 
-from ..gamma.gamma_rest import fetch_current_event_slug
+from py_clob_client.client import BalanceAllowanceParams
+
 
 
 class ClobRest:
-    
     def __init__(self):
-        self.clob_services = ClobService()
         self.chain_id = CHAIN_ID or 137
         self.private_key = PRIVATE_KEY
         self.funder_address = FUNDER_ADDRESS
         self.clob_endpoint = CLOB_ENDPOINT
-        
-        self._current_event = self._get_current_event_slug()
-        self.current_market = self._current_event['markets'][0]
-        self.clob_ids = json.loads(self.current_market['clobTokenIds'])
-        self.condition_id = self.current_market['conditionId']
 
-        self.signer_client = None
+        self.signer_client = None,
         self.client = None
+        self.auth_creds = {}
 
-
-    def _get_current_event_slug(self):
-        return fetch_current_event_slug()  
-    
-
-    # --- L1 Authentication ----
     async def authenticate(self):
         """
         L1 -> L2 Method: call this ONLY when you're ready to trade.
         Uses the provided PK or pulls from config.
         """
+        
         target_pk = self.private_key
         if not target_pk:
             raise ValueError("Private Key required for authentication")
-        
+
         self.signer_client = ClobClient(
             host=self.clob_endpoint,
-            chain_id=int(self.chain_id),
-            key=target_pk,
-            signature_type=0
+            chain_id = int(self.chain_id),
+            key=self.private_key
         )
+
         creds = self.signer_client.create_or_derive_api_creds()
-        print(f"🔐 L2 Auth Successful for Key: {creds}...")
-        
+
+        self.auth_creds = {
+            'api_key':creds.api_key,
+            'api_secret':creds.api_secret,
+            'api_passphrase':creds.api_passphrase
+        }
+            
         api_creds = ApiCreds(
-                api_key=creds.api_key,
-                api_secret=creds.api_secret,
-                api_passphrase=creds.api_passphrase
-            )
+            api_key=creds.api_key,
+            api_secret=creds.api_secret,
+            api_passphrase=creds.api_passphrase
+        )
+
         self.client = ClobClient(
-                host = self.clob_endpoint,
-                chain_id=int(self.chain_id),
-                key=self.private_key,
-                creds=api_creds,
-                signature_type=2,
-                funder=self.funder_address
-            )
-        
+            host=self.clob_endpoint,
+            chain_id=int(self.chain_id),
+            key=self.private_key,
+            creds=api_creds,
+            signature_type=2,
+            funder=self.funder_address
+        )
 
-        
         print("🔐 L2 Initialization Complete. Ready to trade.")
-
-
-
+    
     # --------L2 methods------------
     
     # create_orders
@@ -162,29 +152,51 @@ class ClobRest:
         return self.client.get_balance_allowance(balance_allow_params)
     
     
+    def get_l2_creds(self):
+        return self.auth_creds
 
+    # # --- CLOB REST Data Fetchers ---
+    # async def fetch_order_book(self):
+    #     """Returns the current buy/sell depth for a specific token"""
+    #     url = f"{self.clob_endpoint}/book"
+    #     return await self.clob_services.get_clob_rest(url,params={'token_id':self.clob_ids})
 
-    # --- CLOB REST Data Fetchers ---
-    async def fetch_order_book(self):
-        """Returns the current buy/sell depth for a specific token"""
-        url = f"{self.clob_endpoint}/book"
-        return await self.clob_services.get_clob_rest(url,params={'token_id':self.clob_ids})
+    # async def fetch_last_price(self, side=str): # side="buy" / "sell"
+    #     """Returns the current market price for a side (buy/sell)"""
 
-    async def fetch_last_price(self, side=str): # side="buy" / "sell"
-        """Returns the current market price for a side (buy/sell)"""
+    #     url = f"{CLOB_ENDPOINT}/price"
+    #     return await self.clob_services.get_clob_rest(url, params={
+    #             "token_id":self.clob_ids, 
+    #             "side":side
+    #         })
 
-        url = f"{CLOB_ENDPOINT}/price"
-        return await self.clob_services.get_clob_rest(url, params={
-                "token_id":self.clob_ids, 
-                "side":side
-            })
-
-    async def fetch_price_history(self, interval='1h', fidelity=1):
-        """Returns the historical odds (probability) for the token"""
+    # async def fetch_price_history(self, interval='1h', fidelity=1):
+    #     """Returns the historical odds (probability) for the token"""
         
-        url = f"{CLOB_ENDPOINT}/prices-history"
-        return await self.clob_services.get_clob_rest(url, params={
-            "market": self.clob_ids,
-            "interval": interval,
-            "fidelity": fidelity
-        })  
+    #     url = f"{CLOB_ENDPOINT}/prices-history"
+    #     return await self.clob_services.get_clob_rest(url, params={
+    #         "market": self.clob_ids,
+    #         "interval": interval,
+    #         "fidelity": fidelity
+    #     })  
+
+
+if __name__ == "__main__":
+
+    async def main():
+
+        clob_rest = ClobRest()
+
+        await clob_rest.authenticate()
+
+        params = BalanceAllowanceParams(
+            asset_type="COLLATERAL"
+        )
+
+        balance = clob_rest.get_balance_allowance(params)
+        print(balance)
+    asyncio.run(main())
+
+
+
+

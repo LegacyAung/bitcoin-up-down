@@ -18,7 +18,7 @@ class TimePersistance:
             "readable" : str(timedelta(seconds=delta_seconds))[2:],
             "res_name": f"{res_sec // 60}min"
         }
-        print(f"\r🕒 UTC: {self.time_data['utc_unix']} | ⏳ Next 15m in: {self.time_data['readable']} ({self.time_data['delta_sec']}s) \033[K", end="", flush=True)
+        # print(f"\r🕒 UTC: {self.time_data['utc_unix']} | ⏳ Next 15m in: {self.time_data['readable']} ({self.time_data['delta_sec']}s) \033[K", end="", flush=True)
         return self.time_data
          
         
