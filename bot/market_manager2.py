@@ -50,12 +50,12 @@ class MarketManager:
 
         
             print("🚀 Step 4: Starting 15m binance_rest...")
-            asyncio.create_task(self._run_binance_rest_15m_persistance())
+            asyncio.create_task(self._monitor_binance_rest_15m_persistance())
             
 
             if not self.is_pricediff_finished:
                 print("🚀 Step 5: Starting persistance price diff...")
-                asyncio.create_task(self._run_price_diff_persistance())
+                asyncio.create_task(self._monitor_price_diff_persistance())
             
         except Exception as e:
             self.is_initialized = False
@@ -83,8 +83,8 @@ class MarketManager:
         while self.is_running:
             try: 
                 self.delta_sec = self._get_delta_sec()
-                print("resolution_count: ", self.res_count)
-                print('timecountdown: ', self.delta_sec)
+                print("resolution_count:______________________: ", self.res_count)
+                print('timecountdown:__________________________: ', self.delta_sec)
                 print(f"rolling stamps:_______________________: {self.rolling_timestamps}")
 
                 if self.delta_sec >= 900:
@@ -127,7 +127,7 @@ class MarketManager:
                 )
                 print(f"stopping clob wss: {status} and slug_timestamp: {slug_timestamp}")
 
-    async def _run_binance_rest_15m_persistance(self):
+    async def _monitor_binance_rest_15m_persistance(self):
         while self.is_running:
             try:
                 if self.delta_sec >= 899:
@@ -139,7 +139,7 @@ class MarketManager:
                 print(f"⚠️ Binance REST Error: {e}")
                 await asyncio.sleep(5)
 
-    async def _run_price_diff_persistance(self):
+    async def _monitor_price_diff_persistance(self):
         while self.is_running:
             try:
                 if self.delta_sec == 0:
