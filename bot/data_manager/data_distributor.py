@@ -18,6 +18,8 @@ class DataDistributor:
             '1day_15m': pd.DataFrame()
         }
 
+#-----------------------------Binance--------------------------#
+
     async def distribute_binance_wss(self, df, interval):
         if df.empty : return
         label = "1hr_1s" if interval == '1s' else "1day_1m"
@@ -76,6 +78,16 @@ class DataDistributor:
             filename = f"btc_candles_indications_{label}.jsonl"
             self._distribute_as_jsonl(enriched_15m_df, filename,interval,label)
 
+
+#-----------------------------Clob--------------------------#
+    async def distribute_clob_market(self,df,event_type):
+        pass
+
+    async def distribute_clob_user(self,df,event_type):
+        pass
+
+
+#-----------------------------Helpers--------------------------#
     def _distribute_as_jsonl(self, df, filename, interval, label):
         path = self.file_io.get_path(filename)
         self.file_io.export_full_df_to_jsonl(df,path)

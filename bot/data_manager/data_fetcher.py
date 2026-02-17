@@ -1,6 +1,6 @@
 import asyncio
 import json
-import time
+
 
 from api.binance.binance_rest import BinanceRest
 from api.binance.binance_wss import BinanceWss

@@ -19,6 +19,7 @@ class MarketManager:
         self.res_count = 0
         
         self.active_clob_streams = set()
+        self.user_channel_ts = None
         self.rolling_timestamps = {'current': "", 'next': ""}
         self.is_pricediff_finished = False
         
@@ -41,9 +42,9 @@ class MarketManager:
             print("🚀 Step 2: Fetching Binance Rest data...")
             await self.data_manager.handle_binance_rest_data()
 
-            current_ts = self._get_curr_res_ts()
+            self.user_channel_ts = self._get_curr_res_ts()
             print("🚀 Step 3: Starting CLOB User Channel...")
-            asyncio.create_task(self.data_manager.handle_clob_wss_pipeline(current_ts, 'user', self.clob_rest))
+            asyncio.create_task(self.data_manager.handle_clob_wss_pipeline(self.user_channel_ts, 'user', self.clob_rest))
 
             print("🚀 Step 3 1/2: Starting CLOB Market Channels...")
             asyncio.create_task(self._dynamic_clob_wss_monitor())
@@ -64,9 +65,29 @@ class MarketManager:
         
 
     async def market_disconnector(self):
+        if not self.is_initialized: return
+        
         print("\n🛑 Initiating Shutdown...")
-
         self.is_running = False
+        
+        try: 
+            await self.data_manager.handle_disconnect_binance_wss()
+        except Exception as e:
+            print(f"⚠️ Binance disconnect error: {e}")
+
+        for ts in list(self.active_clob_streams):
+            try:
+                await self.data_manager.handle_disconnect_clob_wss(ts,'market')
+            except Exception as e:
+                print(f"⚠️ CLOB Market ({ts}) disconnect error: {e}")
+
+        if self.user_channel_ts:
+            try:
+                await self.data_manager.handle_disconnect_clob_wss(self.user_channel_ts, 'user')
+            except Exception as e:
+                print(f"⚠️ CLOB User ({ts}) disconnect error: {e}")
+
+        self.is_initialized = False
 
 
 
@@ -83,10 +104,6 @@ class MarketManager:
         while self.is_running:
             try: 
                 self.delta_sec = self._get_delta_sec()
-                print("resolution_count:______________________: ", self.res_count)
-                print('timecountdown:__________________________: ', self.delta_sec)
-                print(f"rolling stamps:_______________________: {self.rolling_timestamps}")
-
                 if self.delta_sec >= 900:
                     old_next = self.rolling_timestamps['next']
                     self.rolling_timestamps['current'] = old_next

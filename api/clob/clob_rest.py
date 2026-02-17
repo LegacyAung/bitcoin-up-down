@@ -133,11 +133,11 @@ class ClobRest:
             return  
         return self.client.get_orders(order_ids)
     
-    def get_open_orders(self, token_ids):
+    def get_open_orders(self, params):
         if not self.client:
             print("❌ Error: Client not authenticated. Call authenticate() first.")
             return  
-        return self.client.get_order_books(token_ids)
+        return self.client.get_order_books(params)
     
     def get_trades(self,trade_params):
         if not self.client:
