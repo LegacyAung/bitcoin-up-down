@@ -6,7 +6,10 @@ from utils.file_io import FileIO
 from .macd.macd import Macd
 from .macd.signal_1s import MacdSignals1s
 from .macd.signal_1m import MacdSignals1m
+from .heikin_ashin.heikin_ashin import HeikinAshin
 
+from .price_change.price_change import PriceChange
+from .order_book.order_book import OrderBook
 
 class StratedyManager:
     def __init__(self):
@@ -21,11 +24,11 @@ class StratedyManager:
             print(f"❌ Error: No buffer data found for {label}")
             return
         
-        combined_df = await self._calculate_all_indicators(buffer)
+        processed_df = await self._calculate_all_indicators(buffer, interval)
 
-        if combined_df is not None:
-            combined_df = combined_df.dropna().copy()
-            return combined_df
+        if processed_df is not None:
+            processed_df = processed_df.dropna().copy()
+            return processed_df
         
         return None
 
@@ -34,29 +37,62 @@ class StratedyManager:
 
         if buffer is None or buffer.empty : return None
         
-        df_with_indicators = await self._calculate_all_indicators(buffer)
+        processed_df = await self._calculate_all_indicators(buffer, interval)
 
-        if df_with_indicators is not None and not df_with_indicators.empty:
-
-            new_row = df_with_indicators.iloc[-1].to_dict()
-
-            await self._all_signals(df_with_indicators, interval, label)
+        if processed_df is not None and not processed_df.empty:
+            new_row = processed_df.iloc[-1].to_dict()
+            await self._all_signals(processed_df, interval, label)
 
             return new_row
-        
+
         return None
 
+    async def handle_clob_wss_from_distributor(self, data, event_type, bound_loads):
+        if data is None :return 
 
-    async def _calculate_all_indicators(self, df):
+        if event_type == "book":
+            pass
+        elif event_type == "price_change":
+            await self._price_change_handler(data, bound_loads)
+        elif event_type == "last_trade_price":
+            pass
+        
+
+
+#--------------------------------Helping Handlers---------------------------#
+    async def _price_change_handler(self, data, bound_loads):
+
+        price_change = PriceChange(data, bound_loads)
+        
+        return await price_change.current_no_ask_price()
+
+    
+    async def _order_book_handler(self, data, bound_loads):
+        pass
+
+
+#----------------------------------HELPERS----------------------------------#    
+    async def _calculate_all_indicators(self, df, interval):
         try:
             if df is None or df.empty:
                 print("❌ Error: Input DF to indicators is empty.")
                 return None
-            df = Macd(df).calculate_macd()
-            if df is None:
+            
+            processed_df = Macd(df).calculate_macd()
+            
+            if processed_df is None:
                 print("❌ Error: MACD calculation returned None")
                 return None
-            return df
+            
+            if interval == "1s":
+                ha_df = HeikinAshin(processed_df).calculate_heikin_ashin()
+                if ha_df is not None:
+                    processed_df = ha_df    
+                else:
+                    print("⚠️ Warning: HA failed, falling back to standard MACD df")    
+            
+            return processed_df
+        
         except Exception as e:
             print(f"❌ Critical Exception in indicator chain: {e}")
             return None
@@ -87,15 +123,3 @@ class StratedyManager:
             #print(f"❌ Critical Exception in indicator chain: {e}")
             return None
         
-    async def _async_save(self, file_path, data):
-        """Non-blocking background save to JSONL."""
-        try:
-            # Offload blocking I/O to a background thread
-            await asyncio.to_thread(self._sync_append_jsonl, file_path, data)
-        except Exception as e:
-            print(f"❌ Async Save Error: {e}")
-
-    def _sync_append_jsonl(self, file_path, data):
-        """Synchronous file append operation."""
-        with open(file_path, 'a', encoding='utf-8') as f:
-            f.write(json.dumps(data) + '\n')

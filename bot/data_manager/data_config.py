@@ -24,7 +24,7 @@ class MarketConfig:
     ])
     
     clob_wss: List[str] = field(default_factory=lambda: [
-        "book", "price_change", "last_trade_price", "best_bid_ask"
+        "book", "price_change", "last_trade_price"
     ])
 
 # Usage

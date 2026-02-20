@@ -6,6 +6,7 @@ from .data_synthesizer import DataSynthesizer
 from .data_distributor import DataDistributor
 from .data_config import MarketConfig
 
+from functools import partial
 
 class DataManager:
 
@@ -50,7 +51,13 @@ class DataManager:
 #--------------------------CLOB_WSS---------------------------#
     async def handle_clob_wss_pipeline(self, slug_timestamp, channel_type, clob_rest):
         sub_msg = await self._handle_gamma_rest_submsg(slug_timestamp=slug_timestamp)
-        await self.data_fetcher.open_clob_wss(channel_type, sub_msg, clob_rest, self._handle_clob_wss_data)
+        bound_loads = {
+            "slug_timestamp": slug_timestamp,
+            "channel_type": channel_type,
+            "sub_msg":sub_msg
+        }
+        bound_handler = partial(self._handle_clob_wss_data, bound_loads=bound_loads)
+        await self.data_fetcher.open_clob_wss(channel_type, sub_msg, clob_rest, bound_handler)
         
     async def handle_disconnect_clob_wss(self, slug_timestamp, channel_type):
         sub_msg = await self._handle_gamma_rest_submsg(slug_timestamp=slug_timestamp)
@@ -111,22 +118,22 @@ class DataManager:
                 interval = kline.get('i')
                 await self.data_distributor.distribute_binance_wss(df=df, interval=interval)
                 
-    async def _handle_clob_wss_data(self, msg):
+    async def _handle_clob_wss_data(self, msg, bound_loads=None):
+
         events = msg if isinstance(msg, list) else [msg]
 
         for event in events:
             e_type = event.get("event_type")
+
             if not e_type: continue
 
             method_name = f"synthesize_raw_clob_wss_{e_type}"
             handler = getattr(self.data_synthesizer, method_name)
-
-            if not handler: return
-
-            if e_type == "new_market":
-                df = await handler(event)
-                print("🆕new market scouter: ",df)
-
+            
+            data = await handler(event)
+            
+            await self.data_distributor.distribute_clob_wss(data, e_type, bound_loads)
+            
     async def _handle_gamma_rest_submsg(self, slug_timestamp):
         return await self.data_fetcher.fetch_submsg_clobwss(timestamp=slug_timestamp, channels=self.clob_wss_channels)
 

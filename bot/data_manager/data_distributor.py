@@ -26,17 +26,17 @@ class DataDistributor:
 
         self.buffers[label] = pd.concat([self.buffers[label], df], ignore_index=True).tail(900)
 
-        if 'macd_line' in self.buffers[label].columns:
-            enriched_row = await self.stratedgy_manager.handle_wss_from_distributor(
+        enriched_row = await self.stratedgy_manager.handle_wss_from_distributor(
                 buffers = self.buffers,
                 interval = interval,
                 label = label
             )
+        if enriched_row:
+            filename = f"btc_candles_indications_{label}.jsonl"
+            path = self.file_io.get_path(filename)
+            self.file_io.append_row_to_jsonl(path,enriched_row)
 
-            if enriched_row:
-                filename = f"btc_candles_indications_{label}.jsonl"
-                path = self.file_io.get_path(filename)
-                self.file_io.append_row_to_jsonl(path,enriched_row)
+        
 
     async def distribute_binance_rest(self, df, interval, label):
         if df.empty : return
@@ -59,6 +59,7 @@ class DataDistributor:
             filename = f"btc_candles_indications_{label}.jsonl"
             self._distribute_as_jsonl(enriched_df, filename,interval,label)
             
+    
     async def distribute_persistant_binance_rest(self, df, interval, label):
         if df.empty : return
         
@@ -80,11 +81,17 @@ class DataDistributor:
 
 
 #-----------------------------Clob--------------------------#
-    async def distribute_clob_market(self,df,event_type):
-        pass
+    async def distribute_clob_wss(self, data, event_type, bound_loads):
+        if data.empty : return
 
-    async def distribute_clob_user(self,df,event_type):
-        pass
+        await self.stratedgy_manager.handle_clob_wss_from_distributor(
+            data=data,
+            event_type=event_type,
+            bound_loads=bound_loads
+        )
+        
+
+    
 
 
 #-----------------------------Helpers--------------------------#

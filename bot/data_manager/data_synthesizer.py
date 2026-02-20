@@ -168,3 +168,4 @@ class DataSynthesizer:
             timestamp=int(raw_data.get('timestamp'))
         )
         return pd.DataFrame([asdict(mr)])
+    

@@ -66,7 +66,7 @@ class PortfolioManager:
         except Exception as e:
             print(f"❌ Error fetching order positions: {e}")
             return None
-    
+        
     
 
 
