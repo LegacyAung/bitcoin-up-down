@@ -1,77 +1,47 @@
 import asyncio
 
+
 from api.clob.clob_rest import ClobRest
-from py_clob_client.client import BalanceAllowanceParams, TradeParams, OpenOrderParams 
+from .portfolio import Portfolio
+from ..states.portfolio_state import portfolio_states
 
 class PortfolioManager:
     def __init__(self, clob_rest):
-        
         self.clob_rest = clob_rest
+        self.risk_per_resolution = 0.55
+        self.decimal_adjustment = 1000000
 
-        self.active_legs = []
+        self.portfolio =  Portfolio(self.clob_rest)
+        self.states = portfolio_states
 
-
-    async def get_balance(self, asset_type, token_id=None):
-        if not self.clob_rest : return
-
-        params = BalanceAllowanceParams(
-            asset_type=asset_type.upper(),
-            token_id=token_id
-        )
-
-        try:
-            balance_data = self.clob_rest.get_balance_allowance(params)
-            return balance_data
-        except Exception as e:
-            print(f"❌ Error fetching balance: {e}")
-            return None
-        
-    async def get_active_positions(self,maker_address,market, asset_id): # maker_address == funder_address , market == condition_id 
-        if not self.clob_rest : return
-        
-        params = TradeParams(
-            id=None,
-            maker_address=maker_address,
-            market=market,
-            asset_id=asset_id,
-            before = None,
-            after= None
-        )
-
-        try:
-            return self.clob_rest.get_trades(params)
-        except Exception as e:
-            print(f"❌ Error fetching active positions: {e}")
-            return None
-        
-    async def get_order_position(self, order_id):
-        if not self.clob_rest : return
-
-        try: 
-            return self.clob_rest.get_Order(order_id)
-        except Exception as e:
-            print(f"❌ Error fetching active positions: {e}")
-            return None
-        
-    async def get_order_positions(self, order_id = None, condition_id = None, asset_id = None):
-        if not self.clob_rest : return
-
-        params = OpenOrderParams(
-            id = order_id,
-            market = condition_id,
-            asset_id = asset_id
-        )
-        try:
-            return self.clob_rest.get_open_orders(params)
-        except Exception as e:
-            print(f"❌ Error fetching order positions: {e}")
-            return None
-        
     
+    
+    async def handle_portfolio(self):
+        if not self.clob_rest : return
+        await self._cal_balance()
+    
+    
+    
+    async def _cal_balance(self):
+        if not self.clob_rest :return
+
+        raw_balance_dict = await self.portfolio.get_balance(asset_type="COLLATERAL") 
+        raw_balance = raw_balance_dict.get('balance')
+        usd = float(raw_balance) / self.decimal_adjustment
+        self.states.set_wallet_balance(usd)
+
+    
+    async def _check_unfulfilled_orders(self, condition_id):
+        pass
+
+    async def _check_fulfilled_orders(self, condition_id):
+        pass
+
+
+
 
 
 if __name__ == "__main__":
-    
     async def main():
         # 1. Initialize the REST client
         clob_rest = ClobRest()
@@ -79,14 +49,11 @@ if __name__ == "__main__":
         # 2. Authenticate (This is required before any L2 calls)
         await clob_rest.authenticate()
         
-        # 3. Initialize the Portfolio Manager
-        portfolio = PortfolioManager(clob_rest)
+        portfolio_manager = PortfolioManager(clob_rest)
 
-        # 4. Check USDC Balance (Collateral)
-        print("\n--- Checking USDC Balance ---")
-        balance = await portfolio.get_balance(asset_type="COLLATERAL")
+        await portfolio_manager._cal_balance()
+
         
-        return balance 
+    
 
-    # This is the standard way to launch an async main in Python 3.7+
     asyncio.run(main())

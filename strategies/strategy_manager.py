@@ -1,5 +1,5 @@
 import asyncio
-import json
+
 from utils.file_io import FileIO
 
 
@@ -51,7 +51,7 @@ class StratedyManager:
         if data is None :return 
 
         if event_type == "book":
-            pass
+            await self._order_book_handler(data, bound_loads)
         elif event_type == "price_change":
             await self._price_change_handler(data, bound_loads)
         elif event_type == "last_trade_price":
@@ -64,10 +64,29 @@ class StratedyManager:
 
         price_change = PriceChange(data, bound_loads)
         
-        return await price_change.current_no_ask_price()
+        try:
+            await asyncio.gather(
+                # Current Window Updates
+                price_change.current_yes_ask_price(),
+                price_change.current_no_ask_price(),
+                # price_change.current_yes_bid_price(),
+                # price_change.current_no_bid_price(),
+
+                # Next Window Updates
+                price_change.next_yes_ask_price(),
+                price_change.next_no_ask_price(),
+                # price_change.next_yes_bid_price(),
+                # price_change.next_no_bid_price()
+            )
+
+        except Exception as e:
+            print(f"❌ Error in PriceChange gather: {e}")
 
     
     async def _order_book_handler(self, data, bound_loads):
+        
+        order_book = OrderBook(data, bound_loads)
+
         pass
 
 

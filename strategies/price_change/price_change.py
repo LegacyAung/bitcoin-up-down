@@ -1,7 +1,9 @@
 import json
-import pandas as pd
 
-from bot.global_state import state
+
+from bot.states.global_state import state
+from bot.states.price_change_state import pc_state
+
 
 
 class PriceChange:
@@ -14,29 +16,45 @@ class PriceChange:
         self._rolling_timestamps = state.rolling_timestamps
 
     async def current_yes_ask_price(self):
-        return await self._get_dynamic_price('yes', 'best_ask', 'current')
-            
-
+        price = await self._get_dynamic_price('yes', 'best_ask', 'current')
+        
+        pc_state.set_current_yes_ask_price(price)
+        
     async def current_no_ask_price(self):
-        return await self._get_dynamic_price('no', 'best_ask', 'current')
-    
+        price = await self._get_dynamic_price('no', 'best_ask', 'current')
+        
+        pc_state.set_current_no_ask_price(price)
+        
     async def current_yes_bid_price(self):
-        return await self._get_dynamic_price('yes', 'best_bid', 'current')
+        price = await self._get_dynamic_price('yes', 'best_bid', 'current')
+        
+        pc_state.set_current_yes_bid_price(price)
 
     async def current_no_bid_price(self):
-        return await self._get_dynamic_price('no', 'best_bid', 'current')
+        price = await self._get_dynamic_price('no', 'best_bid', 'current')
+        
+        pc_state.set_current_no_bid_price(price)
 
     async def next_yes_ask_price(self):
-        return await self._get_dynamic_price('yes', 'best_ask', 'next')
+        price = await self._get_dynamic_price('yes', 'best_ask', 'next')
+        
+        pc_state.set_next_yes_ask_price(price)
+        
 
     async def next_no_ask_price(self):
-        return await self._get_dynamic_price('no', 'best_ask', 'next')
-
+        price = await self._get_dynamic_price('no', 'best_ask', 'next')
+        
+        pc_state.set_next_no_ask_price(price)
+        
     async def next_yes_bid_price(self):
-        return await self._get_dynamic_price('yes', 'best_bid', 'next')
+        price = await self._get_dynamic_price('yes', 'best_bid', 'next')
+        
+        pc_state.set_next_yes_bid_price(price)
 
     async def next_no_bid_price(self):
-        return await self._get_dynamic_price('no', 'best_bid', 'next')
+        price = await self._get_dynamic_price('no', 'best_bid', 'next')
+        
+        pc_state.set_next_no_bid_price(price)
 
 
     async def _get_dynamic_price(self, side_outcome, price_type, window):
@@ -45,7 +63,7 @@ class PriceChange:
         price_type: 'best_ask' or 'best_bid'
         window: 'current' or 'next'
         """
-        if self.data is None or (hasattr(self.data, 'empty') and self.data.empty) or len(self.data) == 0:
+        if self.data is None or (hasattr(self.data, 'empty') and self.data.empty):
             return None
         if not self.bound_loads:
             return None
@@ -68,7 +86,7 @@ class PriceChange:
         for change_obj in changes_list:
             if change_obj.get('asset_id') == target_clob_id:
                 price = change_obj.get(price_type)
-                print(f"🎯 {window.upper()} {side_outcome.upper()} {price_type}: {price}")
+                # print(f"🎯 {window.upper()} {side_outcome.upper()} {price_type}: {price}")
                 return price
         
         return None

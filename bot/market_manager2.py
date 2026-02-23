@@ -4,7 +4,7 @@ from api.clob.clob_rest import ClobRest
 from .data_manager.data_manager import DataManager
 from .time_manager.time_manager import TimeManager
 
-from .global_state import state
+from .states.global_state import state
 
 class MarketManager:
     def __init__(self):
@@ -49,7 +49,7 @@ class MarketManager:
 
             if not state.is_pricediff_finished:
                 print("🚀 Step 5: Starting persistance price diff...")
-                asyncio.create_task(self._monitate_price_diff_persistance())
+                asyncio.create_task(self._monitor_price_diff_persistance())
             
         except Exception as e:
             self.is_initialized = False
@@ -97,8 +97,6 @@ class MarketManager:
             }
 
             state.rolling_timestamps = new_timestamps
-
-        
 
         while self.is_running:
             try: 
@@ -156,7 +154,7 @@ class MarketManager:
                 print(f"⚠️ Binance REST Error: {e}")
                 await asyncio.sleep(5)
 
-    async def _monitate_price_diff_persistance(self):
+    async def _monitor_price_diff_persistance(self):
         while self.is_running:
             try:
                 if state.delta_sec == 0:
@@ -177,6 +175,7 @@ class MarketManager:
                 print(f"⚠️ Price Diff Error: {e}")
                 await asyncio.sleep(5)
 
+    
 #-------------------------------HELPERS-----------------------------------#
 
     def _get_delta_sec(self):

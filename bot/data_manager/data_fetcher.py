@@ -94,7 +94,8 @@ class DataFetcher:
             payload = {
                 "type": "subscribe",
                 "assets_ids": json.loads(sub_msg['clob_ids']),
-                "channels": sub_msg['channels']
+                "channels": sub_msg['channels'],
+                "custom_feature_enabled": True
              }
         clob_wss = ClobWss(channel_type, payload, condition_id, clob_callback)
         self.clob_wss_tasks[stream_key] = clob_wss

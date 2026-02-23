@@ -75,6 +75,5 @@ class MacdSignals1s:
     
 
     def _get_no_1s_behind_current_time(self):
-
         return get_no_1s_behind_current_time()
     

@@ -52,8 +52,7 @@ def get_market_window_timestamps():
     ]
 
 
-data = get_market_window_timestamps()
-print(data)
+
 
 def get_prev_24hr_timestamps():
     market_window_timestamps = get_market_window_timestamps()
@@ -102,8 +101,6 @@ def get_time_windows_in_unix():
 
 def get_no_1s_behind_current_time():
     current_ts, start_ts, end_ts = get_time_windows_in_unix()
-    
-
     while True:
         now = datetime.now()
         current_ts = int(now.timestamp())
@@ -115,12 +112,12 @@ def get_no_1s_behind_current_time():
             elapsed = current_ts - start_ts
 
         
-        # print(f"\r🕒 TS: {current_ts} | Elapsed: {elapsed}s | Rem: {end_ts - current_ts}s   ", end="", flush=True)
+        #print(f"\r🕒 TS: {current_ts} | Elapsed: {elapsed}s | Rem: {end_ts - current_ts}s   ", end="", flush=True)
         time.sleep(0.2)
         return current_ts, elapsed , rem
 
 
-       
+get_no_1s_behind_current_time()
 
 
 

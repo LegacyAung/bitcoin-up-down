@@ -3,6 +3,8 @@ import asyncio
 from .time_manager.time_manager import TimeManager
 from .market_manager2 import MarketManager
 
+from .states.global_state import state
+
 class Initiator:
     def __init__(self, work_hrs):
         self.time_manager = TimeManager()
@@ -24,6 +26,9 @@ class Initiator:
         try:
             while True:
                 self.current_ts_utc = self.time_manager.get_current_ts_utc()
+
+                state.working_hours_countdown = int(self.end_ts_utc - self.current_ts_utc)
+                
                 if self.current_ts_utc >= self.end_ts_utc:
                     print(f"\n\n⏰ WORK HOURS REACHED: {self.current_ts_utc} >= {self.end_ts_utc}")
                     break

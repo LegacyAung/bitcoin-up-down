@@ -1,8 +1,9 @@
-from typing import Set, Dict
-
 class GlobalState:
     def __init__(self):
-        # Private variables (prefixed with _)
+        # initiator
+        self._working_hours_countdown = 0
+
+        # market_manager
         self._delta_sec = 0
         self._res_count = 0
         self._active_clob_streams = set()
@@ -11,6 +12,35 @@ class GlobalState:
         self._is_pricediff_finished = False
         self._price_diff = 0
 
+
+        self._events_metadata = []
+
+        # self._events_metadata = [{
+        #     "timestamp": "5555555555555",
+        #     "condition_id" : "555555555555",
+        #     "asset_ids": ['55555', '11111'],
+        #     "channel_type": "market"
+        # }, {}, {}]
+
+    # --- working_hour_countdown ---
+    @property
+    def working_hours_countdown(self):
+        return self._working_hours_countdown
+
+    @working_hours_countdown.setter
+    def working_hours_countdown(self, value: int):
+        self._working_hours_countdown = value
+
+    # --- working_hour_countdown ---
+    @property
+    def events_metadata(self):
+        return self._events_metadata
+    
+    @events_metadata.setter
+    def events_metadata(self, value:dict):
+        if value is None : return
+        self._events_metadata.append(value)
+    
     # --- delta_sec ---
     @property
     def delta_sec(self): 
@@ -76,5 +106,16 @@ class GlobalState:
     @is_pricediff_finished.setter
     def is_pricediff_finished(self, value: bool):
         self._is_pricediff_finished = value
+
+
+    @property
+    def events_metadata(self):
+        return self._events_metadata
+    
+    @events_metadata.setter
+    def events_metadata(self, value):
+        if value is None: return
+        self._events_metadata.append(value)
+
 
 state = GlobalState()

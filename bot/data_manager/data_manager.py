@@ -7,6 +7,7 @@ from .data_distributor import DataDistributor
 from .data_config import MarketConfig
 
 from functools import partial
+from bot.states.global_state import state
 
 class DataManager:
 
@@ -57,8 +58,12 @@ class DataManager:
             "sub_msg":sub_msg
         }
         bound_handler = partial(self._handle_clob_wss_data, bound_loads=bound_loads)
-        await self.data_fetcher.open_clob_wss(channel_type, sub_msg, clob_rest, bound_handler)
+        await asyncio.gather(
+            self.data_fetcher.open_clob_wss(channel_type, sub_msg, clob_rest, bound_handler),
+            self._update_events_metadata(bound_loads)
+        )
         
+
     async def handle_disconnect_clob_wss(self, slug_timestamp, channel_type):
         sub_msg = await self._handle_gamma_rest_submsg(slug_timestamp=slug_timestamp)
         condition_id = sub_msg['condition_id']
@@ -137,8 +142,23 @@ class DataManager:
     async def _handle_gamma_rest_submsg(self, slug_timestamp):
         return await self.data_fetcher.fetch_submsg_clobwss(timestamp=slug_timestamp, channels=self.clob_wss_channels)
 
+    async def _update_events_metadata(self, bound_loads):
+        if bound_loads is None and state.events_metadata is None : return
+        
+        slug_ts = bound_loads.get('slug_timestamp')
+        sub_msg = bound_loads.get('sub_msg')
+        existed_ts  = any(data.get('timestamp') == slug_ts for data in state.events_metadata)
 
+        if not existed_ts:
 
+            value = {
+                'timestamp': slug_ts,
+                'condition_id':  sub_msg['condition_id'],
+                'asset_ids':sub_msg['clob_ids'],
+                'channel_type': bound_loads['channel_type']
+            }
+
+            state.events_metadata.append(value)
 
 
 

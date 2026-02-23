@@ -25,7 +25,7 @@ class TimePersistance:
     def persistantly_get_current_time_utc(self):
         """persistant calculation utc timestamp in unix"""
         self.get_current_time_utc = get_current_time_utc()
-        print(f"\rCurrent UTC: {self.get_current_time_utc}", end="", flush=True)
+        #print(f"\rCurrent UTC: {self.get_current_time_utc}", end="", flush=True)
         return self.get_current_time_utc
         
         
