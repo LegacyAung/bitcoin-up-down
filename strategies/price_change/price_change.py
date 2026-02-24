@@ -2,7 +2,7 @@ import json
 
 
 from bot.states.global_state import state
-from bot.states.price_change_state import pc_state
+from bot.states.price_change_state import pc_states
 
 
 
@@ -18,43 +18,43 @@ class PriceChange:
     async def current_yes_ask_price(self):
         price = await self._get_dynamic_price('yes', 'best_ask', 'current')
         
-        pc_state.set_current_yes_ask_price(price)
+        pc_states.set_current_yes_ask_price(price)
         
     async def current_no_ask_price(self):
         price = await self._get_dynamic_price('no', 'best_ask', 'current')
         
-        pc_state.set_current_no_ask_price(price)
+        pc_states.set_current_no_ask_price(price)
         
     async def current_yes_bid_price(self):
         price = await self._get_dynamic_price('yes', 'best_bid', 'current')
         
-        pc_state.set_current_yes_bid_price(price)
+        pc_states.set_current_yes_bid_price(price)
 
     async def current_no_bid_price(self):
         price = await self._get_dynamic_price('no', 'best_bid', 'current')
         
-        pc_state.set_current_no_bid_price(price)
+        pc_states.set_current_no_bid_price(price)
 
     async def next_yes_ask_price(self):
         price = await self._get_dynamic_price('yes', 'best_ask', 'next')
         
-        pc_state.set_next_yes_ask_price(price)
+        pc_states.set_next_yes_ask_price(price)
         
 
     async def next_no_ask_price(self):
         price = await self._get_dynamic_price('no', 'best_ask', 'next')
         
-        pc_state.set_next_no_ask_price(price)
+        pc_states.set_next_no_ask_price(price)
         
     async def next_yes_bid_price(self):
         price = await self._get_dynamic_price('yes', 'best_bid', 'next')
         
-        pc_state.set_next_yes_bid_price(price)
+        pc_states.set_next_yes_bid_price(price)
 
     async def next_no_bid_price(self):
         price = await self._get_dynamic_price('no', 'best_bid', 'next')
         
-        pc_state.set_next_no_bid_price(price)
+        pc_states.set_next_no_bid_price(price)
 
 
     async def _get_dynamic_price(self, side_outcome, price_type, window):

@@ -1,6 +1,6 @@
 import numpy as np
 
-
+from bot.states.macd_state import macd_states
 from utils.time import get_no_1s_behind_current_time
 
 class MacdSignals1s:
@@ -30,26 +30,35 @@ class MacdSignals1s:
         # print(f"Bearish: {bear_secs_count}s (Weight: {bear_weight:.4f})")
         # print(f"Net Bias: {net_bias:.4f}")
 
-        return {
+        values = {
             "bull_weight": bull_weight,
             "bear_weight": bear_weight,
             "net_bias": net_bias,
             "elapsed": elapsed
         }
+
+        macd_states.set_macd_1s(values)
+
+        # return {
+        #     "bull_weight": bull_weight,
+        #     "bear_weight": bear_weight,
+        #     "net_bias": net_bias,
+        #     "elapsed": elapsed
+        # }
         
     
-    # def define_macd_hist_zero_crossover(self):
-    #     if len(self.df) < 2 : return
+    def define_macd_hist_zero_crossover(self):
+        if len(self.df) < 2 : return
 
-    #     prev = self.df['histogram'].iloc[-2]
-    #     curr = self.df['histogram'].iloc[-1]
+        prev = self.df['histogram'].iloc[-2]
+        curr = self.df['histogram'].iloc[-1]
 
-    #     if prev < 0 and curr > 0 :
-    #         print("BULLISH_CROSS")
-    #         return "BULLISH_CROSS"
-    #     if prev > 0 and curr < 0 :
-    #         print("BEARISH_CROSS")
-    #         return "BEARISH_CROSS"
+        if prev < 0 and curr > 0 :
+            print("BULLISH_CROSS")
+            return "BULLISH_CROSS"
+        if prev > 0 and curr < 0 :
+            print("BEARISH_CROSS")
+            return "BEARISH_CROSS"
 
         
     def define_macd_hist_velocity(self, period=3):
@@ -70,9 +79,6 @@ class MacdSignals1s:
         # print("STABLE")
         return "STABLE"
 
-
-   
-    
 
     def _get_no_1s_behind_current_time(self):
         return get_no_1s_behind_current_time()

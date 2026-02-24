@@ -126,16 +126,16 @@ class StratedyManager:
                 # 1s signals
                 macd_signals1s = MacdSignals1s(df,interval,label)
                 hist = macd_signals1s.define_no_bull_bear_in_60s()
-                hist_velocity = macd_signals1s.define_macd_hist_velocity(period=5)
+                # hist_velocity = macd_signals1s.define_macd_hist_velocity(period=5)
                 # slope = macd_signals1s.get_1s_trend_slope(lookback=60)
             
             if interval == "1m":
                 # 1m signals
                 macd_signals1m = MacdSignals1m(df,interval,label)
-                hist_momentum = macd_signals1m.define_histogram_momentum()
-                macd_hist_exhaustion = macd_signals1m.define_histogram_exhaustion(periods=3)
+                hist_momentum = macd_signals1m.define_histogram_momentum(periods=6)
+                macd_hist_exhaustion = macd_signals1m.define_histogram_exhaustion(periods=6)
 
-            return hist_momentum, macd_hist_exhaustion, hist, hist_velocity
+            return hist_momentum, macd_hist_exhaustion
             
         except Exception as e:
             

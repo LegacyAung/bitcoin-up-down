@@ -3,6 +3,7 @@ import asyncio
 from api.clob.clob_rest import ClobRest
 from .data_manager.data_manager import DataManager
 from .time_manager.time_manager import TimeManager
+from .decision_marker.decision_maker import DecisionMaker
 
 from .states.global_state import state
 
@@ -11,7 +12,7 @@ class MarketManager:
         self.clob_rest = ClobRest()
         self.data_manager = DataManager()
         self.time_manager = TimeManager()
-        
+        self.decision_maker = DecisionMaker()
 
         self.is_running = False
         self.is_initialized = False
@@ -50,6 +51,9 @@ class MarketManager:
             if not state.is_pricediff_finished:
                 print("🚀 Step 5: Starting persistance price diff...")
                 asyncio.create_task(self._monitor_price_diff_persistance())
+
+            print("🚀 Step 6: Decision making initialized...")
+            asyncio.create_task(self.decision_maker.decide())
             
         except Exception as e:
             self.is_initialized = False
