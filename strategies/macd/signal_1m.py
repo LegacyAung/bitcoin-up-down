@@ -1,6 +1,6 @@
 import numpy as np
 
-from bot.states.macd_state import macd_states
+
 
 class MacdSignals1m:
     def __init__(self,df,interval,label):
@@ -8,16 +8,15 @@ class MacdSignals1m:
         self.interval = interval
         self.label = label
 
-
-        self.macd_states = macd_states
-
     def define_current_hist(self):
         if self.df is None: return
         current_val = self.df['histogram'].iloc[-1]
         return current_val
     
-    def define_histogram_squeeze(self, periods=5, threshold=0.05):
+    def define_histogram_squeeze(self, periods=3, volatility_periods=24):
         if self.df is None: return
+
+        threshold = self._get_dynamic_threshold(volatility_periods)
 
         recent_abs_hist = np.abs(self.df['histogram'].tail(periods).values)
 
@@ -25,6 +24,26 @@ class MacdSignals1m:
             return "SQUEEZE_ACTIVE"
         
         return "NEUTRAL"
+
+    def define_zero_line_reject(self, periods=3, volatility_periods=24):
+        if self.df is None: return
+
+        threshold = self._get_dynamic_threshold(volatility_periods)
+
+        hist = self.df['histogram'].tail(periods).values
+
+        if all( v > 0 for v in hist):
+            if hist[-1] > hist[-2] and hist[-2] < hist[-3]:
+                if hist[-2] < threshold:
+                    return "BULL_ZERO_REJECT"
+                
+        if all(v < 0 for v in hist):
+            if hist[-1] < hist[-2] and hist[-2] > hist[-3]:
+                if hist[-2] > -threshold:
+                    return "BEAR_ZERO_REJECT"
+
+        return "NEUTRAL"
+
 
     def define_histogram_side(self, periods=3):
         if self.df is None or len(self.df) < periods : return
@@ -56,7 +75,7 @@ class MacdSignals1m:
             # print("----------------------------------------------1m-------------------------------------------------")
             return "BULLISH"
     
-        elif all(d < 0 for d in diffs):
+        if all(d < 0 for d in diffs):
         # Even if values are +0.5, if they are falling, it's BEARISH
             # print("----------------------------------------------1m-------------------------------------------------")
             # print("-----------BEARISH------------")
@@ -170,6 +189,30 @@ class MacdSignals1m:
         return "NEUTRAL"
 
 
+
+
+
+#-------------------------------------------HELPERS----------------------------------------------#
+    def _get_dynamic_threshold(self, periods=24, multiplier=0.5, min_val=2, max_val=4):
+        """
+        Calculates a threshold based on the volatility of the histogram.
+        multiplier: 0.5 means the squeeze is active if bars are 50% smaller 
+        than the recent average volatility.
+        """  
+
+        if self.df is None or len(self.df) < periods:
+            return 2
+        
+        hist_volatility = self.df['histogram'].tail(periods).std()
+
+        cal_threshold = hist_volatility * multiplier
+        
+        dynamic_threshold = np.clip(cal_threshold, min_val, max_val)
+
+        return dynamic_threshold
+
+
+            
 
 
 

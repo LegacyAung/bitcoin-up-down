@@ -1,6 +1,5 @@
 import numpy as np
 
-from bot.states.macd_state import macd_states
 from utils.time import get_no_1s_behind_current_time
 
 class MacdSignals1s:
@@ -30,21 +29,12 @@ class MacdSignals1s:
         # print(f"Bearish: {bear_secs_count}s (Weight: {bear_weight:.4f})")
         # print(f"Net Bias: {net_bias:.4f}")
 
-        values = {
+        return {
             "bull_weight": bull_weight,
             "bear_weight": bear_weight,
             "net_bias": net_bias,
             "elapsed": elapsed
         }
-
-        macd_states.set_macd_1s(values)
-
-        # return {
-        #     "bull_weight": bull_weight,
-        #     "bear_weight": bear_weight,
-        #     "net_bias": net_bias,
-        #     "elapsed": elapsed
-        # }
         
     
     def define_macd_hist_zero_crossover(self):

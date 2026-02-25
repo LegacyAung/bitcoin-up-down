@@ -53,7 +53,7 @@ class MarketManager:
                 asyncio.create_task(self._monitor_price_diff_persistance())
 
             print("🚀 Step 6: Decision making initialized...")
-            asyncio.create_task(self.decision_maker.decide())
+            asyncio.create_task(self._monitor_decision_maker())
             
         except Exception as e:
             self.is_initialized = False
@@ -179,7 +179,17 @@ class MarketManager:
                 print(f"⚠️ Price Diff Error: {e}")
                 await asyncio.sleep(5)
 
-    
+    async def _monitor_decision_maker(self):
+
+      while self.is_running:
+        try:
+              await self.decision_maker.decide()
+              await asyncio.sleep(0.5)
+
+        except Exception as e:
+            print(f"⚠️ Decision Loop Error: {e}")
+            await asyncio.sleep(2)
+            
 #-------------------------------HELPERS-----------------------------------#
 
     def _get_delta_sec(self):

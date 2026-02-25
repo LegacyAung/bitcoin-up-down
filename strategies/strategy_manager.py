@@ -11,10 +11,13 @@ from .heikin_ashin.heikin_ashin import HeikinAshin
 from .price_change.price_change import PriceChange
 from .order_book.order_book import OrderBook
 
+
+from bot.states.macd_state import macd_states
+
 class StratedyManager:
     def __init__(self):
         self.file_io = FileIO()
-        
+        self.macd_states = macd_states
 
     async def handle_rest_from_distributor(self, buffers, interval, label):
         
@@ -73,8 +76,8 @@ class StratedyManager:
                 # price_change.current_no_bid_price(),
 
                 # Next Window Updates
-                price_change.next_yes_ask_price(),
-                price_change.next_no_ask_price(),
+                # price_change.next_yes_ask_price(),
+                # price_change.next_no_ask_price(),
                 # price_change.next_yes_bid_price(),
                 # price_change.next_no_bid_price()
             )
@@ -122,23 +125,49 @@ class StratedyManager:
                 print("❌ Error: Input DF to indicators is empty.")
                 return None
             
+            macd_1m_signals = None
+            macd_1s_signals = None
+
             if interval == '1s':
                 # 1s signals
                 macd_signals1s = MacdSignals1s(df,interval,label)
                 hist = macd_signals1s.define_no_bull_bear_in_60s()
                 # hist_velocity = macd_signals1s.define_macd_hist_velocity(period=5)
                 # slope = macd_signals1s.get_1s_trend_slope(lookback=60)
+
+                macd_1s_signals = {
+                    'bull_weight': hist['bull_weight'],
+                    'bear_weight': hist['bear_weight'],
+                    'net_bias': hist['net_bias'],
+                    'elapsed': hist['elapsed']
+                }
+
+                self.macd_states = macd_1s_signals
             
             if interval == "1m":
                 # 1m signals
                 macd_signals1m = MacdSignals1m(df,interval,label)
-                hist_momentum = macd_signals1m.define_histogram_momentum(periods=6)
-                macd_hist_exhaustion = macd_signals1m.define_histogram_exhaustion(periods=6)
+                macd_h_exhaustion = macd_signals1m.define_histogram_exhaustion(periods=6)
+                macd_h_momentum = macd_signals1m.define_histogram_momentum(periods=6)
+                macd_h_side = macd_signals1m.define_histogram_side(periods=6)
+                macd_h_squeeze = macd_signals1m.define_histogram_squeeze(periods=6,volatility_periods=24)
+                macd_h_zeroline_reject = macd_signals1m.define_zero_line_reject(periods=3, volatility_periods=24)
 
-            return hist_momentum, macd_hist_exhaustion
+
+                macd_1m_signals = {
+                    'h_exhaustion':macd_h_exhaustion,
+                    'h_momentum':macd_h_momentum,
+                    'h_side':macd_h_side,
+                    'h_squeeze':macd_h_squeeze,
+                    'h_zeroline_reject':macd_h_zeroline_reject
+                }
+
+                self.macd_states = macd_1m_signals
+
+            return macd_1m_signals, macd_1s_signals
             
         except Exception as e:
             
-            #print(f"❌ Critical Exception in indicator chain: {e}")
+            print(f"❌ Critical Exception in indicator chain: {e}")
             return None
         

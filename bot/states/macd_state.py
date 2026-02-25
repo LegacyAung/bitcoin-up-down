@@ -1,8 +1,8 @@
 class MacdState:
     def __init__(self):
         
-        self._macd_1s = {}
-        self._macd_1m = {}
+        self._macd_1s = None
+        self._macd_1m = None
 
 
 
