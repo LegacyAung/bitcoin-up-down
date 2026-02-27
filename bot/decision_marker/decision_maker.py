@@ -23,12 +23,18 @@ class DecisionMaker:
 
         rc_greater_than_0 = await self._is_res_count_greater_than_0()
 
+        print(f" res count : r{rc_greater_than_0}")
+
         if not rc_greater_than_0: "waiting for next resolution..."
         
         print(f"Decision is starting...")
-
+        current_price_diff = self.gs.price_diff
         current_yes_ask = self.pc_states.current_yes_ask_price
         current_no_ask = self.pc_states.current_no_ask_price
+
+        print(current_price_diff)
+        print(current_yes_ask)
+        print(current_no_ask)
 
         if current_yes_ask is None or current_no_ask is None: 
             print("⏳ Waiting for CLOB price data...")
@@ -37,8 +43,7 @@ class DecisionMaker:
         self.current_yes_ask = current_yes_ask
         self.current_no_ask = current_no_ask
         
-        print(current_yes_ask)
-        print(current_no_ask)
+        
 
         tradable_prices = {
             "tradable_y_price" : await self._is_price_at_tradable_zone(current_yes_ask),
@@ -53,7 +58,7 @@ class DecisionMaker:
         await self._decide_15m_countdown(tradable_prices, ask_prices)
 
 
-    async def _decide_15m_countdown(self, tradable_prices):
+    async def _decide_15m_countdown(self, tradable_prices, ask_prices):
 
         delta_sec = state.delta_sec
 
@@ -64,78 +69,92 @@ class DecisionMaker:
         elif 780 > delta_sec >= 660:
             print('we are at _ 660')
             await asyncio.gather(
-                self._decide_bullish_buy(tradable_prices),
-                self._decide_bearish_buy(tradable_prices)
+                self._decide_bullish_buy(tradable_prices,ask_prices),
+                self._decide_bearish_buy(tradable_prices, ask_prices)
             )
         elif 660 > delta_sec >= 540:
             print('we are at _ 540')
             await asyncio.gather(
-                self._decide_bullish_buy(tradable_prices),
-                self._decide_bearish_buy(tradable_prices)
+                self._decide_bullish_buy(tradable_prices,ask_prices),
+                self._decide_bearish_buy(tradable_prices, ask_prices)
             )
         elif 540 > delta_sec >= 420:
             print('we are at _ 420')
             await asyncio.gather(
-                self._decide_bullish_buy(tradable_prices),
-                self._decide_bearish_buy(tradable_prices)
+                self._decide_bullish_buy(tradable_prices,ask_prices),
+                self._decide_bearish_buy(tradable_prices, ask_prices)
             )
         elif 420 > delta_sec >= 300:
             print('we are at _ 300')
             await asyncio.gather(
-                self._decide_bullish_buy(tradable_prices),
-                self._decide_bearish_buy(tradable_prices)
+                self._decide_bullish_buy(tradable_prices,ask_prices),
+                self._decide_bearish_buy(tradable_prices, ask_prices)
             )
         elif 300 > delta_sec >= 180:
             print('we are at _ 180')
             await asyncio.gather(
-                self._decide_bullish_buy(tradable_prices),
-                self._decide_bearish_buy(tradable_prices)
+                self._decide_bullish_buy(tradable_prices,ask_prices),
+                self._decide_bearish_buy(tradable_prices, ask_prices)
             )
         elif 180 > delta_sec >= 70:
             print('we are at _ 180')
             
     
-    async def _decide_bullish_buy(self, tradable_prices):
+    async def _decide_bullish_buy(self, tradable_prices, ask_prices):
 
-        if self.macd_states.macd_1m is None or self.macd_states.macd_1s is None:
+        if self.macd_states.macd_1m is None or self.macd_states.macd_1s is None: 
+            print("wait for macd signals...")
             return
+            
 
         print("deciding for bullish buy....")
     
         macd_1m = self.macd_states.macd_1m
-        hist_momentum_1m = macd_1m['h_momentum']
-        hist_side = macd_1m['h_side']
-        hist_squeeze = macd_1m['h_squeeze']
+        hist_momentum_1m = macd_1m.get('h_momentum')
+        hist_side = macd_1m.get('h_side')
+        hist_squeeze = macd_1m.get('h_squeeze')
+        
 
 
         macd_1s = self.macd_states.macd_1s
-        net_bias = macd_1s['net_bias']
+        net_bias = macd_1s.get('net_bias')
+
+        y_ask = ask_prices.get('current_y')
 
         if not tradable_prices['tradable_y_price']: return
 
         if self.legs_countdown <= 1 : return
 
+        if tradable_prices.get('tradable_y_price'):
+            print(f"Buy YES price at {y_ask} for ${6.66}")
+
         if hist_squeeze == "SQUEEZE_ACTIVE" :
             print(net_bias)
 
         if self.gs.price_diff > 120 and hist_momentum_1m == "BULLISH" and hist_side == "OVERALL_BULLSIDE" :
-            print(f"Buy YES price at {self.prices['current_yes_ask']} for ${6.66}")
+            print(f"Buy YES price at {y_ask} for ${6.66}")
 
         if hist_momentum_1m == "BULLISH" and hist_side == "OVERALL_BULLSIDE" :
-            print(f"Buy YES price at {self.prices['current_yes_ask']} for ${6.66}")
+            print(f"Buy YES price at {y_ask} for ${6.66}")
 
 
-    async def _decide_bearish_buy(self, tradable_prices):
+    async def _decide_bearish_buy(self, tradable_prices, ask_prices):
 
-        if self.macd_states.macd_1m is None or self.macd_states.macd_1s is None:
-            return
+        if self.macd_states.macd_1m is None or self.macd_states.macd_1s is None: 
+            print("wait for macd signals...")
+            return 
         
-        print("deciding for bullish buy....")
+        print("deciding for bearish buy....")
 
         macd_1m = self.macd_states.macd_1m
-        hist_momentum_1m = macd_1m['h_momentum']
+        hist_momentum_1m = macd_1m.get('h_momentum')
 
-        if self.gs.price_diff < -120 and hist_momentum_1m == "BEARISH" and tradable_prices['tradle_n_price']  and self.legs_countdown > 0:
+        curr_n_ask = ask_prices.get('current_n')
+
+        if tradable_prices.get('tradable_n_price'):
+            print(f"Buy YES price at {curr_n_ask} for ${6.66}")
+
+        if self.gs.price_diff < -120 and hist_momentum_1m == "BEARISH" and tradable_prices['tradable_n_price']  and self.legs_countdown > 0:
 
             print(f"Buy NO price at {self.prices['current_no_ask']} for ${6.66}") 
 
@@ -163,6 +182,8 @@ class DecisionMaker:
     async def _is_res_count_greater_than_0 (self):
 
         res_count = state.res_count
+
+        print(f" ress: {res_count}")
 
         if not res_count > 0: return False
 

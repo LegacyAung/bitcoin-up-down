@@ -164,14 +164,13 @@ class MarketManager:
                 if state.delta_sec == 0:
                     print("📊 Resolution Hit: Performing fresh Price Diff sync...")
                     
-                    state.price_diff = await self.data_manager.handle_persistant_price_diff()
-                    
+                    await self.data_manager.handle_persistant_price_diff()
                     state.is_pricediff_finished = True
                     await asyncio.sleep(1) 
                 else:
                     state.is_pricediff_finished = False
 
-                    state.price_diff = await self.data_manager.handle_persistant_price_diff()
+                    await self.data_manager.handle_persistant_price_diff()
                     
                     await asyncio.sleep(1) 
                     

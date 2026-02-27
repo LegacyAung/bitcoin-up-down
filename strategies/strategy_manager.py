@@ -142,7 +142,7 @@ class StratedyManager:
                     'elapsed': hist['elapsed']
                 }
 
-                self.macd_states = macd_1s_signals
+                self.macd_states.set_macd_1s(macd_1s_signals)
             
             if interval == "1m":
                 # 1m signals
@@ -162,7 +162,7 @@ class StratedyManager:
                     'h_zeroline_reject':macd_h_zeroline_reject
                 }
 
-                self.macd_states = macd_1m_signals
+                self.macd_states.set_macd_1m(macd_1m_signals)
 
             return macd_1m_signals, macd_1s_signals
             

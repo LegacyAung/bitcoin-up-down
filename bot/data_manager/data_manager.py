@@ -97,11 +97,15 @@ class DataManager:
             buffers = current_buffers,
             label_1s = self.binance_rest_configs[0].label,
             label_15m = self.binance_rest_configs[2].label,
-        ) 
-            
+        )
+
+        state.price_diff = price_gap
+
+        print(f" this is also live gap to global state: {state.price_diff}")
+
         if price_gap is not None:
             print(f"📊 Live Gap: {price_gap}")
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.5)
 
     
 
@@ -159,6 +163,8 @@ class DataManager:
             }
 
             state.events_metadata.append(value)
+
+            print(f"This is from data_manager update to global state: {state.events_metadata}")
 
 
 

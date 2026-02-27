@@ -19,6 +19,7 @@ class PriceChange:
         price = await self._get_dynamic_price('yes', 'best_ask', 'current')
         
         pc_states.set_current_yes_ask_price(price)
+
         
     async def current_no_ask_price(self):
         price = await self._get_dynamic_price('no', 'best_ask', 'current')

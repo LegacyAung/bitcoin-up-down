@@ -10,8 +10,7 @@ class GlobalState:
         self._user_channel_ts = None
         self._rolling_timestamps = {'current': "", 'next': ""}
         self._is_pricediff_finished = False
-        self._price_diff = 0
-
+        self._price_diff = 0.0
 
         self._events_metadata = []
 

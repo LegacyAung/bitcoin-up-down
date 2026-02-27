@@ -23,7 +23,7 @@ class MacdState:
         return self._macd_1m
     
 
-    def set_macd_1s(self, values:dict):
+    def set_macd_1m(self, values:dict):
         self._macd_1m = values
 
 

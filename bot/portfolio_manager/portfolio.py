@@ -1,6 +1,4 @@
 import asyncio
-
-from api.clob.clob_rest import ClobRest
 from py_clob_client.client import BalanceAllowanceParams, TradeParams, OpenOrderParams 
 
 
@@ -26,15 +24,15 @@ class Portfolio:
             return None
         
 
-    async def get_active_positions(self, order_id=None, maker_address=None, market=None, asset_id=None): 
+    async def get_active_positions(self, trade_params=None): 
         # maker_address == funder_address , market == condition_id  , asset_id == clobTokenId
         if not self.clob_rest : return
         
         params = TradeParams(
-            id=order_id,
-            maker_address=maker_address,
-            market=market,
-            asset_id=asset_id,
+            id=trade_params.get('order_id'),
+            maker_address=trade_params.get('maker_address'),
+            market=trade_params.get('market_id'),
+            asset_id=trade_params.get('asset_id'),
             before = None,
             after= None
         )
@@ -46,13 +44,13 @@ class Portfolio:
             return None
         
     
-    async def get_order_positions(self, order_id = None, condition_id = None, asset_id = None):
+    async def get_order_positions(self, order_params=None):
         if not self.clob_rest : return
 
         params = OpenOrderParams(
-            id = order_id,
-            market = condition_id,
-            asset_id = asset_id
+            id = order_params.get('order_id'),
+            market = order_params.get('market_id'),
+            asset_id = order_params.get('asset_id')
         )
         try:
             return self.clob_rest.get_orders(params)
