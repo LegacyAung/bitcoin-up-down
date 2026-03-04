@@ -15,15 +15,12 @@ class DecisionMaker:
         self.bull_bear_1m_weight_collector = []
         self.legs_countdown = 4
 
-        self.current_yes_ask = 0.0
-        self.current_no_ask = 0.0
+        
 
 
     async def decide(self):
 
         rc_greater_than_0 = await self._is_res_count_greater_than_0()
-
-        print(f" res count : r{rc_greater_than_0}")
 
         if not rc_greater_than_0: "waiting for next resolution..."
         
@@ -32,19 +29,10 @@ class DecisionMaker:
         current_yes_ask = self.pc_states.current_yes_ask_price
         current_no_ask = self.pc_states.current_no_ask_price
 
-        print(current_price_diff)
-        print(current_yes_ask)
-        print(current_no_ask)
-
         if current_yes_ask is None or current_no_ask is None: 
             print("⏳ Waiting for CLOB price data...")
             return
         
-        self.current_yes_ask = current_yes_ask
-        self.current_no_ask = current_no_ask
-        
-        
-
         tradable_prices = {
             "tradable_y_price" : await self._is_price_at_tradable_zone(current_yes_ask),
             "tradable_n_price" : await self._is_price_at_tradable_zone(current_no_ask)
@@ -55,119 +43,130 @@ class DecisionMaker:
             'current_n' : current_no_ask
         }
 
-        await self._decide_15m_countdown(tradable_prices, ask_prices)
+        decision_data  = {
+            'tradable_prices': tradable_prices,
+            'ask_prices': ask_prices,
+            'current_price_diff': current_price_diff
+        }
+
+        await self._decide_15m_countdown(decision_data)
 
 
-    async def _decide_15m_countdown(self, tradable_prices, ask_prices):
+    async def _decide_15m_countdown(self, decision_data):
 
         delta_sec = state.delta_sec
 
         if delta_sec >= 780 :
             print('we are at _ 780')
-            
 
-        elif 780 > delta_sec >= 660:
-            print('we are at _ 660')
-            await asyncio.gather(
-                self._decide_bullish_buy(tradable_prices,ask_prices),
-                self._decide_bearish_buy(tradable_prices, ask_prices)
-            )
-        elif 660 > delta_sec >= 540:
-            print('we are at _ 540')
-            await asyncio.gather(
-                self._decide_bullish_buy(tradable_prices,ask_prices),
-                self._decide_bearish_buy(tradable_prices, ask_prices)
-            )
-        elif 540 > delta_sec >= 420:
-            print('we are at _ 420')
-            await asyncio.gather(
-                self._decide_bullish_buy(tradable_prices,ask_prices),
-                self._decide_bearish_buy(tradable_prices, ask_prices)
-            )
-        elif 420 > delta_sec >= 300:
-            print('we are at _ 300')
-            await asyncio.gather(
-                self._decide_bullish_buy(tradable_prices,ask_prices),
-                self._decide_bearish_buy(tradable_prices, ask_prices)
-            )
-        elif 300 > delta_sec >= 180:
-            print('we are at _ 180')
-            await asyncio.gather(
-                self._decide_bullish_buy(tradable_prices,ask_prices),
-                self._decide_bearish_buy(tradable_prices, ask_prices)
-            )
-        elif 180 > delta_sec >= 70:
-            print('we are at _ 180')
-            
-    
-    async def _decide_bullish_buy(self, tradable_prices, ask_prices):
 
+        if 780 > delta_sec >= 180:
+            print('we are at _ (780 - 180)')
+            await asyncio.gather(
+                self._decide_bullish_buy(decision_data),
+                self._decide_bearish_buy(decision_data)
+            )
+            await self._decide_bullish_buy(decision_data)
+
+        if delta_sec <= 180:
+            print('we are at _ 180')
+
+
+    async def _decide_bullish_buy(self, decision_data):
         if self.macd_states.macd_1m is None or self.macd_states.macd_1s is None: 
             print("wait for macd signals...")
             return
+        
+        print("🟢deciding for bullish buy....🟢")
+        
+        macd_1m = self.macd_states.macd_1m
+        hist_1m_slope = macd_1m.get('h_slope')
+        hist_1m_momentum = macd_1m.get('h_momentum')
+        hist_1m_squeeze = macd_1m.get('h_squeeze')
+
+        price_diff = abs(decision_data.get("current_price_diff"))
+        tradable_prices = decision_data.get("tradable_prices")
+        is_tradable_price = tradable_prices.get("tradable_y_price")
+
+        ask_prices = decision_data.get('ask_prices')
+        yes_ask_price = ask_prices.get('current_y')
+
+        is_slope_high = await self._is_macd_slope_high(hist_1m_slope)
+        is_slope_positive = await self._is_macd_slope_positive(hist_1m_slope)
+
+
+
+        if price_diff <= 30:
+            
+            if is_slope_high and is_slope_positive and is_tradable_price:
+                # Here we call 
+                print(f"💰BUY YES PRICE AT {yes_ask_price} FOR SHARE SIZE 10💰")
+
+            if not is_slope_high and is_slope_positive and is_tradable_price:
+                print(f"YES PRICE : {yes_ask_price}")
+                print(f"💰BUY YES PRICE B/W LIMIT ORDER BETWEEN 0.2 & 0.4💰")
+        
+        
+        if 30 < price_diff <= 130:
+            print('hello_2')
             
 
-        print("deciding for bullish buy....")
-    
-        macd_1m = self.macd_states.macd_1m
-        hist_momentum_1m = macd_1m.get('h_momentum')
-        hist_side = macd_1m.get('h_side')
-        hist_squeeze = macd_1m.get('h_squeeze')
-        
+
+        if price_diff > 130:
+            print('hello_3')
 
 
-        macd_1s = self.macd_states.macd_1s
-        net_bias = macd_1s.get('net_bias')
-
-        y_ask = ask_prices.get('current_y')
-
-        if not tradable_prices['tradable_y_price']: return
-
-        if self.legs_countdown <= 1 : return
-
-        if tradable_prices.get('tradable_y_price'):
-            print(f"Buy YES price at {y_ask} for ${6.66}")
-
-        if hist_squeeze == "SQUEEZE_ACTIVE" :
-            print(net_bias)
-
-        if self.gs.price_diff > 120 and hist_momentum_1m == "BULLISH" and hist_side == "OVERALL_BULLSIDE" :
-            print(f"Buy YES price at {y_ask} for ${6.66}")
-
-        if hist_momentum_1m == "BULLISH" and hist_side == "OVERALL_BULLSIDE" :
-            print(f"Buy YES price at {y_ask} for ${6.66}")
-
-
-    async def _decide_bearish_buy(self, tradable_prices, ask_prices):
-
+    async def _decide_bearish_buy(self, decision_data):
         if self.macd_states.macd_1m is None or self.macd_states.macd_1s is None: 
             print("wait for macd signals...")
-            return 
+            return
         
-        print("deciding for bearish buy....")
-
+        print("🔴deciding for bearish buy....🔴")
+        
         macd_1m = self.macd_states.macd_1m
-        hist_momentum_1m = macd_1m.get('h_momentum')
+        hist_1m_slope = macd_1m.get('h_slope')
 
-        curr_n_ask = ask_prices.get('current_n')
+        price_diff = abs(decision_data.get("current_price_diff"))
+        tradable_prices = decision_data.get("tradable_prices")
+        is_tradable_price = tradable_prices.get("tradable_n_price")
 
-        if tradable_prices.get('tradable_n_price'):
-            print(f"Buy YES price at {curr_n_ask} for ${6.66}")
+        ask_prices = decision_data.get('ask_prices')
+        no_ask_price = ask_prices.get('current_n')
 
-        if self.gs.price_diff < -120 and hist_momentum_1m == "BEARISH" and tradable_prices['tradable_n_price']  and self.legs_countdown > 0:
 
-            print(f"Buy NO price at {self.prices['current_no_ask']} for ${6.66}") 
+        if price_diff <= 30:
+
+            is_slope_high = await self._is_macd_slope_high(hist_1m_slope)
+            is_slope_positive = await self._is_macd_slope_positive(hist_1m_slope)
+
+            if is_slope_high and not is_slope_positive and is_tradable_price:
+                print(f"💰BUY NO PRICE AT {no_ask_price} FOR SHARE SIZE 10💰")
+
+            if not is_slope_high and not is_slope_positive and is_tradable_price:
+                print(f"NO PRICE : {no_ask_price}")
+                print(f"💰BUY NO PRICE B/W LIMIT ORDER BETWEEN 0.2 & 0.4💰")
+        
+        
+        if 30 < price_diff <= 130:
+            print('hello_2') 
+
+
+        if price_diff > 130:
+            print('hello_3')
+        
+    
+
+
+#----------------------------------HELPERS----------------------------------#  
 
         
-
-    
     async def _is_price_at_tradable_zone(self, current_price):
 
         if 0.0 <= current_price <= 0.19:
             print('False')
             return False
         
-        if 0.45 <= current_price <= 0.60:
+        if 0.50 <= current_price <= 0.60:
             print('False')
             return False
         
@@ -183,11 +182,18 @@ class DecisionMaker:
 
         res_count = state.res_count
 
-        print(f" ress: {res_count}")
-
         if not res_count > 0: return False
 
         return True
     
+    async def _is_macd_slope_high(self, h_slope):
 
-    
+        if h_slope is None : return
+
+        return abs(h_slope) > 2.0
+
+    async def _is_macd_slope_positive(self, h_slope):
+
+        if h_slope is None : return
+
+        return h_slope > 0

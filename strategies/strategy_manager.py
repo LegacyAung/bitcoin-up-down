@@ -148,21 +148,24 @@ class StratedyManager:
                 # 1m signals
                 macd_signals1m = MacdSignals1m(df,interval,label)
                 macd_h_exhaustion = macd_signals1m.define_histogram_exhaustion(periods=6)
-                macd_h_momentum = macd_signals1m.define_histogram_momentum(periods=6)
+                macd_h_momentum = macd_signals1m.define_histogram_momentum(periods=4)
                 macd_h_side = macd_signals1m.define_histogram_side(periods=6)
                 macd_h_squeeze = macd_signals1m.define_histogram_squeeze(periods=6,volatility_periods=24)
                 macd_h_zeroline_reject = macd_signals1m.define_zero_line_reject(periods=3, volatility_periods=24)
-
+                macd_h_slope = macd_signals1m.define_histogram_slope(periods=6)
 
                 macd_1m_signals = {
                     'h_exhaustion':macd_h_exhaustion,
                     'h_momentum':macd_h_momentum,
                     'h_side':macd_h_side,
                     'h_squeeze':macd_h_squeeze,
-                    'h_zeroline_reject':macd_h_zeroline_reject
+                    'h_zeroline_reject':macd_h_zeroline_reject,
+                    'h_slope':macd_h_slope
                 }
 
                 self.macd_states.set_macd_1m(macd_1m_signals)
+
+                print(f"macd_1m_states: {self.macd_states.macd_1m}")
 
             return macd_1m_signals, macd_1s_signals
             

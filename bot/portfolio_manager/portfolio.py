@@ -1,4 +1,3 @@
-import asyncio
 from py_clob_client.client import BalanceAllowanceParams, TradeParams, OpenOrderParams 
 
 

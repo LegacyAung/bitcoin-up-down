@@ -13,6 +13,18 @@ class MacdSignals1m:
         current_val = self.df['histogram'].iloc[-1]
         return current_val
     
+
+    def define_histogram_slope(self, periods=3):
+        if self.df is None or len(self.df) < periods: return
+
+        y = self.df['histogram'].tail(periods).values
+        x = np.arange(len(y))
+        slope, _ = np.polyfit(x, y, 1)
+        slope = float(slope)
+        print(f"slope: {slope}")
+
+        return slope
+
     def define_histogram_squeeze(self, periods=3, volatility_periods=24):
         if self.df is None: return
 
