@@ -134,6 +134,9 @@ class DataManager:
         for event in events:
             e_type = event.get("event_type")
 
+            if e_type == "trade" or e_type == "order":
+                print(f"from data_manager: {e_type}")
+                
             if not e_type: continue
 
             method_name = f"synthesize_raw_clob_wss_{e_type}"
@@ -151,11 +154,15 @@ class DataManager:
         
         slug_ts = bound_loads.get('slug_timestamp')
         sub_msg = bound_loads.get('sub_msg')
-        existed_ts  = any(data.get('timestamp') == slug_ts for data in state.events_metadata)
-
-        if not existed_ts:
+        channel_type = bound_loads.get('channel_type')
+        
+        stream_key = f"{slug_ts}_{channel_type}"
+        existed_stream_key = any(data.get('stream_key') == stream_key for data in state.events_metadata)
+        
+        if not existed_stream_key:
 
             value = {
+                'stream_key': stream_key,
                 'timestamp': slug_ts,
                 'condition_id':  sub_msg['condition_id'],
                 'asset_ids':sub_msg['clob_ids'],

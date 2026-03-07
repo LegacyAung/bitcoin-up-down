@@ -18,7 +18,7 @@ class GammaRest:
 if __name__ == "__main__":
 
     async def main():
-        timestamp = "1770787800"
+        timestamp = "1772894700"
         params = {
             "active": str(True).lower(),
             "closed": str(False).lower()

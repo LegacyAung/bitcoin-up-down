@@ -1,49 +1,26 @@
 import asyncio
-import json
-
 from api.clob.clob_rest import ClobRest
 from .portfolio import Portfolio
-from states.portfolio_state import portfolio_states
-from states.global_state import state
+from executor import Execution
+from ..states.portfolio_state import portfolio_states
+from ..states.global_state import state
+
+
 
 class PortfolioManager:
 
     def __init__(self, clob_rest):
+
         self.clob_rest = clob_rest
         self.portfolio =  Portfolio(self.clob_rest)
+        self.execution = Execution(self.clob_rest)
+
         self.gs = state
         self.pf_states = portfolio_states
 
-        
-
-        # --- states ---
-        self.order_positions = []           # Tracks open positions {slug_ts: data}
-        self.active_trades = []             # Tracks active {slug_ts: data}
-
-
-        # Dynamic trade size according to legs
-        self._fulfilled_legs_metadata = {
-            'leg_1': {
-                'order_id': None,
-                'trader_side':None,         # "TAKER" or "MAKER"
-                'outcome': None,            # "Up" or "Down"
-                'price': None,              # "Up" or "Down"
-                'fee_rate_bps': None,       # Usually is 1000
-                'size' : None,              # Usually is 1000    
-                'total_investment': None
-            },  
-            'leg_2': {},
-            'leg_3': {},
-            'leg_4': {}
-        }
-
-        # Dynamic 
-        self._unfulfilled_legs_metadata = {
-
-        }
-
+    
     async def call_portfolio(self):
-        pass
+        await self._portfolio_caller()
 
 
     async def _portfolio_caller(self):
@@ -60,7 +37,9 @@ class PortfolioManager:
 
         raw_balance_dict = await self.portfolio.get_balance(asset_type="COLLATERAL") 
         raw_balance = raw_balance_dict.get('balance')
-        self.total_bankroll = float(raw_balance)/ 1000000
+        total_bankroll = float(raw_balance)/ 1000000
+
+        self.pf_states.set_wallet_balance(total_bankroll)
 
         """Calling get_order_positions"""
         """Calling get_active_positions"""
@@ -83,38 +62,101 @@ class PortfolioManager:
 
                 open_orders = await self.portfolio.get_order_positions(order_params)
                 active_trades = await self.portfolio.get_active_positions(trade_params)
+
+                self.pf_states.set_open_orders(open_orders)
+                self.pf_states.set_active_trades(active_trades)
                 
-                self.order_positions.extend(open_orders)
-                self.active_trades.extend(active_trades)
+                
+    async def _trade_intents_handler(self):
 
-        
-
-    async def _trade_approval_handler(self, entry_prices):
         """Handling trade approval states that is passed down from decision maker"""
-        pass
-    
-    def _cal_trade_size_limit_order(self, entry_price):
-
-        if self.pf_states.max_legs == 4:
-            print(f"trade size for 1st leg...")
         
-        if self.pf_states.max_legs == 3:
-            print(f"trade size for 2nd leg...")
+        intent = await self.pf_states.trade_queue.get()
 
-        if self.pf_states.max_legs == 2:
-            print(f"trade size for 3rd leg...")
+        print(f"got the trade intent from decision maker {intent}")
 
-        if self.pf_states.max_legs == 1:
-            print(f"trade size for 4th leg...(emergency round)")
+        await self._process_trade(intent)
+        
+        self.pf_states.trade_queue.task_done()
 
-        if self.pf_states.max_legs == 0:
-            print(f"you have exceeded max legs, wait for next resolution")
 
-    def _cal_trade_size_next_leg(self):
+    async def _process_trade(self, intent):
+
+        stream_key = f"{self.gs.rolling_timestamps.get('current')}_market"
+
+        leg = intent.get('leg')
+        price = intent.get('price')
+        outcome = intent.get('outcome').upper()
+        side = intent.get('side')
+        order_type = intent.get('order_type')
+        
+        share = self._cal_trade_size_on_leg(leg, price)
+
+        event = next((e for e in self.gs.events_metadata if e.get('stream_key') == stream_key))
+
+        if event:
+
+            asset_ids = event.get('asset_ids', [])
+            asset_id_from_outcome = asset_ids[0] if outcome == "UP" else asset_ids[1]
+
+            if order_type == "market_order":
+
+                order_date = {
+                    'asset_id' : asset_id_from_outcome,
+                    'amount': share,
+                    'side': side,
+                    'price': 0,
+                }
+
+                print(f"ordering market order {order_data}")
+
+                #order_result = self.execution.market_order(order_data)
+
+            if order_type == "limit_order":
+                """ MINIMUM SHARE SIZE IS 5 """    
+
+                order_data = {
+                    'asset_id': asset_id_from_outcome,
+                    'price': price,
+                    'size': share,
+                    'side': side
+                }
+
+                print(f"ordering market order {order_data}")
+                
+                #order_result = self.execution.limit_order(order_data)
+
+            
+
+    def _cal_trade_size_on_leg(self, leg, price):
+        op_bal = self.pf_states.operational_balance
+
+        if leg == 1 :
+
+            balance_to_buy = op_bal * 0.10
+            
+            return balance_to_buy
+        
+        if 1 < leg <= 4:
+           pass
+           
+        #    active_trades = self.pf_states.active_trades
+        #    current_market_id = self.pf_states._current_market_id
+
+        #    market_trades = [t for t in active_trades if t.get('market') == current_market_id]
+
+        #    if market_trades:
+        #        pass
+
+    def _cal_profit(self,):
         pass
+        
+
+           
 #------------------------------------------------helpers-----------------------------------------------------#
 
-
+    def _generate_random_float(self):
+        pass
 
 if __name__ == "__main__":
     async def main():

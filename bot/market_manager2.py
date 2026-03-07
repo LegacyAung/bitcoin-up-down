@@ -4,8 +4,10 @@ from api.clob.clob_rest import ClobRest
 from .data_manager.data_manager import DataManager
 from .time_manager.time_manager import TimeManager
 from .decision_marker.decision_maker import DecisionMaker
+from .portfolio_manager.portfolio_manager import PortfolioManager
 
 from .states.global_state import state
+from .states.portfolio_state import portfolio_states
 
 class MarketManager:
     def __init__(self):
@@ -13,6 +15,7 @@ class MarketManager:
         self.data_manager = DataManager()
         self.time_manager = TimeManager()
         self.decision_maker = DecisionMaker()
+        self.portfolio_manager = PortfolioManager(self.clob_rest)
 
         self.is_running = False
         self.is_initialized = False
@@ -36,9 +39,9 @@ class MarketManager:
             print("🚀 Step 2: Fetching Binance Rest data...")
             await self.data_manager.handle_binance_rest_data()
 
-            state.user_channel_ts = self._get_curr_res_ts()
-            print("🚀 Step 3: Starting CLOB User Channel...")
-            asyncio.create_task(self.data_manager.handle_clob_wss_pipeline(state.user_channel_ts, 'user', self.clob_rest))
+            # state.user_channel_ts = self._get_curr_res_ts()
+            # print("🚀 Step 3: Starting CLOB User Channel...")
+            # asyncio.create_task(self.data_manager.handle_clob_wss_pipeline(state.user_channel_ts, 'user', self.clob_rest))
 
             print("🚀 Step 3 1/2: Starting CLOB Market Channels...")
             asyncio.create_task(self._dynamic_clob_wss_monitor())
@@ -54,6 +57,9 @@ class MarketManager:
 
             print("🚀 Step 6: Decision making initialized...")
             asyncio.create_task(self._monitor_decision_maker())
+
+            print("🚀 Step 7: Portfolio monitoring initialized...")
+            asyncio.create_task(self._monitor_portfolio_manager())
             
         except Exception as e:
             self.is_initialized = False
@@ -115,11 +121,18 @@ class MarketManager:
                     continue
                 
                 if state.delta_sec <= 30:
-                    await self._manage_clob_wss(action='stop', slug_timestamp=state.rolling_timestamps.get('current'), status="current")
+                    await asyncio.gather(
+                        self._manage_clob_wss(action='stop', slug_timestamp=state.rolling_timestamps.get('current'), status="current", channel_type='market'),
+                        self._manage_clob_wss(action='stop', slug_timestamp=state.rolling_timestamps.get('current'), status="current", channel_type='user'),
+                    )
                 elif state.delta_sec <= 300:
-                    await self._manage_clob_wss(action='start', slug_timestamp=state.rolling_timestamps.get('next'), status="next")
+                    await asyncio.gather(
+                        self._manage_clob_wss(action='start', slug_timestamp=state.rolling_timestamps.get('next'), status="next", channel_type='market'),
+                        self._manage_clob_wss(action='start', slug_timestamp=state.rolling_timestamps.get('next'), status="next", channel_type='user'),
+                    )
                 else:
-                    await self._manage_clob_wss(action='start', slug_timestamp=state.rolling_timestamps.get('current'), status="current" )
+                    await self._manage_clob_wss(action='start', slug_timestamp=state.rolling_timestamps.get('current'), status="current", channel_type='market')
+                    await self._manage_clob_wss(action='start', slug_timestamp=state.rolling_timestamps.get('current'), status="current", channel_type='user' )
                 
                 await asyncio.sleep(1)
 
@@ -127,24 +140,35 @@ class MarketManager:
                 print(f"⚠️ Monitor Error: {e}")
                 await asyncio.sleep(5)
 
-    async def _manage_clob_wss(self, action, slug_timestamp, status):
+    
+    async def _manage_clob_wss(self, action, slug_timestamp, status, channel_type):
         if not slug_timestamp: return
 
+        stream_key = f"{channel_type}_{slug_timestamp}"
+
         if action == "start":
-            if slug_timestamp not in state.active_clob_streams:
-                state.active_clob_streams.add(slug_timestamp)
+            
+            if stream_key not in state.active_clob_streams:
+                state.active_clob_streams.add(stream_key)
+
                 asyncio.create_task(
-                    self.data_manager.handle_clob_wss_pipeline(slug_timestamp, "market", self.clob_rest)
+                    self.data_manager.handle_clob_wss_pipeline(slug_timestamp, channel_type, self.clob_rest)
                 )
+
                 print(f"starting clob wss:  {status} and slug_timestamp  {slug_timestamp}")
 
+
         if action == "stop":
-            if slug_timestamp in state.active_clob_streams:
-                state.active_clob_streams.remove(slug_timestamp)
+
+            if stream_key in state._active_clob_streams:
+
+                state.active_clob_streams.remove(stream_key)
                 asyncio.create_task(
-                    self.data_manager.handle_disconnect_clob_wss(slug_timestamp, "market")
+                    self.data_manager.handle_disconnect_clob_wss(slug_timestamp, channel_type)
                 )
                 print(f"stopping clob wss: {status} and slug_timestamp: {slug_timestamp}")
+
+
 
     async def _monitor_binance_rest_15m_persistance(self):
         while self.is_running:
@@ -179,16 +203,34 @@ class MarketManager:
                 await asyncio.sleep(5)
 
     async def _monitor_decision_maker(self):
+        while self.is_running:
+            try:
+                await self.decision_maker.decide()
+                await asyncio.sleep(0.5)
 
-      while self.is_running:
-        try:
-              await self.decision_maker.decide()
-              await asyncio.sleep(0.5)
+            except Exception as e:
+                print(f"⚠️ Decision Loop Error: {e}")
+                await asyncio.sleep(2)
 
-        except Exception as e:
-            print(f"⚠️ Decision Loop Error: {e}")
-            await asyncio.sleep(2)
+    async def _monitor_portfolio_manager(self):
+        while self.is_running:
+            try:
+                
+                if state.delta_sec >= 900:
+                    current_ts = state.rolling_timestamps.get('current')
+                    current_market = next((e for e in state.events_metadata if e['timestamp'] == current_ts), None)
+
+                    if current_market:
+                        market_id = current_market.get('condition_id')
+                        portfolio_states.reset_for_new_resolution(market_id) 
+
+                await self.portfolio_manager.call_portfolio()
+                await asyncio.sleep(0.5)
             
+            except Exception as e:
+
+                print(f"⚠️ Portfolio Manager Loop Error: {e}")
+                await asyncio.sleep(2)
 #-------------------------------HELPERS-----------------------------------#
 
     def _get_delta_sec(self):

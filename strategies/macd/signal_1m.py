@@ -8,12 +8,6 @@ class MacdSignals1m:
         self.interval = interval
         self.label = label
 
-    def define_current_hist(self):
-        if self.df is None: return
-        current_val = self.df['histogram'].iloc[-1]
-        return current_val
-    
-
     def define_histogram_slope(self, periods=3):
         if self.df is None or len(self.df) < periods: return
 

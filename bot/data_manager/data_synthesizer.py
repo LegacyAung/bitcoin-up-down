@@ -169,3 +169,8 @@ class DataSynthesizer:
         )
         return pd.DataFrame([asdict(mr)])
     
+    async def synthesize_raw_clob_wss_trade(self, raw_data):
+        print(f'this is from user channel for trade: {raw_data}')
+
+    async def synthesize_raw_clob_wss_order(self, raw_data):
+        print(f'this is from user channel for order: {raw_data}')

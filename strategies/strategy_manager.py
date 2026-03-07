@@ -132,6 +132,7 @@ class StratedyManager:
                 # 1s signals
                 macd_signals1s = MacdSignals1s(df,interval,label)
                 hist = macd_signals1s.define_no_bull_bear_in_60s()
+                hist_10s = macd_signals1s.define_momentum_on_10s(periods=4)
                 # hist_velocity = macd_signals1s.define_macd_hist_velocity(period=5)
                 # slope = macd_signals1s.get_1s_trend_slope(lookback=60)
 
@@ -139,10 +140,16 @@ class StratedyManager:
                     'bull_weight': hist['bull_weight'],
                     'bear_weight': hist['bear_weight'],
                     'net_bias': hist['net_bias'],
-                    'elapsed': hist['elapsed']
+                    'elapsed': hist['elapsed'],
+                    'current_10s_sum': hist_10s.get("current_10s_sum"),
+                    'period_sums':hist_10s.get("period_sums"),
+                    'momentum_10s':hist_10s.get("momentum_10s"),
+                    'is_consistent':hist_10s.get('is_consistent')
                 }
 
                 self.macd_states.set_macd_1s(macd_1s_signals)
+
+                
             
             if interval == "1m":
                 # 1m signals

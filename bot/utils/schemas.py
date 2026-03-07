@@ -117,3 +117,50 @@ class ClobMarketResolved:
     winning_outcome: str
     event_message: EventMessage
     timestamp: int
+
+
+#----------------------- CLOB Schemas User Channel ------------------------# 
+@dataclass
+class MakerOrders:
+    asset_id: str
+    matched_amount: str
+    order_id: str
+    outcome: str
+    owner: str
+    price: str  
+
+@dataclass
+class ClobTrade:
+    asset_id: str
+    event_type: str
+    id: str
+    last_update: str
+    maker_orders: List[MakerOrders]
+    market: str
+    matchtime: str
+    outcome: str
+    owner: str
+    price: str
+    side: str
+    status: str
+    taker_order_id: str
+    timestamp: str
+    trade_owner: str
+    type: str    
+
+@dataclass
+class ClobOrder:
+    asset_id: str
+    associate_trades: str
+    event_type: str
+    id: str
+    market: str
+    order_owner: str
+    original_size: str
+    outcome: str
+    owner: str
+    price: str
+    side: str
+    size_matched: str
+    timestamp: str
+    type: str

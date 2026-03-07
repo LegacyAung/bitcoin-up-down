@@ -5,7 +5,7 @@ import json
 from config import CLOB_ENDPOINT, CHAIN_ID, PRIVATE_KEY, FUNDER_ADDRESS
 from py_clob_client.client import ClobClient
 from py_clob_client.client import ApiCreds
-from py_clob_client.client import BalanceAllowanceParams
+from py_clob_client.client import BalanceAllowanceParams, OrderType
 
 
 
@@ -70,30 +70,30 @@ class ClobRest:
             return        
         return self.client.create_order(order_args)
     
-    async def create_market_order(self,order_args):
+    def create_market_order(self,market_order_args):
         if not self.client:
             print("❌ Error: Client not authenticated. Call authenticate() first.")
             return        
-        return await self.client.create_market_order(order_args)
+        return self.client.create_market_order(market_order_args)
 
-    async def create_and_post_order(self, user_order):
+    def create_and_post_order(self, user_order):
         if not self.client:
             print("❌ Error: Client not authenticated. Call authenticate() first.")
             return        
-        return await self.client.create_and_post_order(user_order)
+        return self.client.create_and_post_order(user_order)
 
     # post orders
-    async def post_order(self,signed_order ):
+    def post_order(self,signed_order):
         if not self.client:
             print("❌ Error: Client not authenticated. Call authenticate() first.")
             return
-        return await self.client.post_order(signed_order)
+        return self.client.post_order(signed_order, OrderType.FOK)
     
-    async def post_orders(self,signed_orders):
+    def post_orders(self,signed_orders):
         if not self.client:
             print("❌ Error: Client not authenticated. Call authenticate() first.")
             return
-        return await self.client.post_orders(signed_orders)
+        return self.client.post_orders(signed_orders)
     
     # cancel orders
     async def cancel_order(self,order_id):

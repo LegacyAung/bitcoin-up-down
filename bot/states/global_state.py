@@ -15,7 +15,7 @@ class GlobalState:
         self._events_metadata = []
 
         # self._events_metadata = [{
-        #     "timestamp": "5555555555555",
+        #     "stream_key": "5555555555555",
         #     "condition_id" : "555555555555",
         #     "asset_ids": ['55555', '11111'],
         #     "channel_type": "market"
