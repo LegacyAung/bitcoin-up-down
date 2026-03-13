@@ -85,16 +85,20 @@ class DecisionMaker:
 
         if current_leg == 1:
             if len(active_trades) > 0 and prev_leg_outcome is not None: return
-            await self._decide_on_price_diff()
+            order_type = 'market_order'
+            await self._decide_on_direction(order_type)
 
         if 1 < current_leg <= 3 :
             if len(active_trades) < 1 and prev_leg_outcome is None : return
-            await self._decide_on_direction()
+            order_type = 'limit_order'
+            print('waiting for leg decision')
+            #await self._decide_on_direction(order_type)
 
         if current_leg == 4:
             if len(active_trades) < 3 and prev_leg_outcome is None: return
+            
 
-    async def _decide_on_price_diff(self):
+    async def _decide_on_price_diff(self, order_type):
         if self.macd_states.macd_1m is None or self.macd_states.macd_1s is None: 
             print("wait for macd signals...")
             return
@@ -116,64 +120,68 @@ class DecisionMaker:
             print("HELLO _1")
             if is_slope_high and is_slope_positive:
                 
-                await self._decide_bullish_buy()
+                await self._decide_bullish_buy(order_type)
 
             if is_slope_high and not is_slope_positive:
                 
-                await self._decide_bearish_buy()
+                await self._decide_bearish_buy(order_type)
 
             if not is_slope_high:
                 
                 if hist_1m_momentum == "BULLISH":
 
-                    await self._decide_bullish_buy()
+                    await self._decide_bullish_buy(order_type)
 
                 if hist_1m_momentum == "BEARISH":
 
-                    await self._decide_bearish_buy()
+                    await self._decide_bearish_buy(order_type)
 
                 if hist_1m_momentum == "NEUTRAL":
                     
                     if hist_10s_momentum == "STRONG_BULLISH_STAIRCASE":
 
-                        await self._decide_bullish_buy()
+                        await self._decide_bullish_buy(order_type)
 
                     if hist_10s_momentum == "STRONG_BEARISH_STAIRCASE":
 
-                        await self._decide_bearish_buy()
+                        await self._decide_bearish_buy(order_type)
 
         
         if 30 < price_diff <= 130:
 
             print("HELLO _2")
             if hist_1m_momentum == "BULLISH":
-                await self._decide_bullish_buy()
+                await self._decide_bullish_buy(order_type)
             
             if hist_1m_momentum == "BEARISH":
-                await self._decide_bearish_buy()
+                await self._decide_bearish_buy(order_type)
 
             if hist_1m_momentum == "NEUTRAL":
                 
                 if hist_10s_momentum == "STRONG_BULLISH_STAIRCASE":
 
-                    await self._decide_bullish_buy()
+                    await self._decide_bullish_buy(order_type)
 
                 if hist_10s_momentum == "STRONG_BEARISH_STAIRCASE":
 
-                    await self._decide_bearish_buy()
+                    await self._decide_bearish_buy(order_type)
 
         
         if price_diff > 130:
             print("HELLO _3")
 
             if is_y_price_higher:
-                await self._decide_bullish_buy()
+                await self._decide_bullish_buy(order_type)
             else:
-                await self._decide_bearish_buy() 
+                await self._decide_bearish_buy(order_type) 
 
-    async def _decide_on_direction(self):
-        pass
-    
+    async def _decide_on_direction(self, order_type):
+        
+        if self.yes_ask_price > self.no_ask_price:
+            await self._decide_bullish_buy(order_type)
+        else:
+            await self._decide_bearish_buy(order_type)
+
     async def _decide_bullish_buy(self, order_type):
         is_y_tradable = self.is_y_tradable
 
@@ -195,7 +203,7 @@ class DecisionMaker:
             self.pf_states.set_trade_intents(trade_intent)
 
 
-    async def _decide_bearish_buy(self):
+    async def _decide_bearish_buy(self, order_type):
         is_n_tradable = self.is_n_tradable
 
         if is_n_tradable:
@@ -209,7 +217,7 @@ class DecisionMaker:
                     'outcome': 'Up',
                     'leg': self.pf_states.current_leg,
                     'status': 'NEW',
-                    'order_type': 'market_order',
+                    'order_type': order_type,
                     "price": self.no_ask_price
             }
 

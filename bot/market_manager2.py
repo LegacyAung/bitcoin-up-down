@@ -224,7 +224,7 @@ class MarketManager:
                         market_id = current_market.get('condition_id')
                         portfolio_states.reset_for_new_resolution(market_id) 
 
-                await self.portfolio_manager.call_portfolio()
+                await self.portfolio_manager.start_portfolio()
                 await asyncio.sleep(0.5)
             
             except Exception as e:

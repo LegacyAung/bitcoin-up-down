@@ -3,6 +3,8 @@ import pandas as pd
 from utils.file_io import FileIO
 from strategies.strategy_manager import StratedyManager
 
+from bot.states.portfolio_state import portfolio_states
+
 
 
 class DataDistributor:
@@ -10,6 +12,8 @@ class DataDistributor:
     def __init__(self):
         self.file_io = FileIO()
         self.stratedgy_manager = StratedyManager()
+
+        self.pf_states = portfolio_states
         
 
         self.buffers = {
@@ -34,10 +38,9 @@ class DataDistributor:
         if enriched_row:
             filename = f"btc_candles_indications_{label}.jsonl"
             path = self.file_io.get_path(filename)
-            self.file_io.append_row_to_jsonl(path,enriched_row)
+            await self.file_io.append_row_to_jsonl2(path,enriched_row)
 
-        
-
+    
     async def distribute_binance_rest(self, df, interval, label):
         if df.empty : return
         new_history = df.iloc[:-1].copy()
@@ -57,7 +60,7 @@ class DataDistributor:
         if enriched_df is not None:
             self.buffers[label] = enriched_df
             filename = f"btc_candles_indications_{label}.jsonl"
-            self._distribute_as_jsonl(enriched_df, filename,interval,label)
+            await self._distribute_as_jsonl(enriched_df, filename,interval,label)
             
     
     async def distribute_persistant_binance_rest(self, df, interval, label):
@@ -77,12 +80,28 @@ class DataDistributor:
         if enriched_15m_df is not None:
             self.buffers[label] = enriched_15m_df
             filename = f"btc_candles_indications_{label}.jsonl"
-            self._distribute_as_jsonl(enriched_15m_df, filename,interval,label)
+            await self._distribute_as_jsonl(enriched_15m_df, filename,interval,label)
 
 
 #-----------------------------Clob--------------------------#
     async def distribute_clob_wss(self, data, event_type, bound_loads):
-        if data.empty : return
+        if data is None or (isinstance(data, dict) and not data): return
+        
+        if hasattr(data, 'empty') and data.empty: return
+        
+
+        if event_type == "trade":
+            order_id = data.get('id')
+            order_status = data.get('status')
+            self.pf_states.set_active_trades(data) if order_status == "MATCHED" else print(f"{order_id} status is currently {order_status}")
+            print(f"data_distributor_{event_type}: {self.pf_states.active_trades}")
+
+        if event_type == "order":
+            
+            order_id = data.get('id')
+            order_status = data.get('status')
+            self.pf_states.set_open_orders(data) if order_status == "LIVE" else print(f"{order_id} status is currently {order_status}")
+            print(f"data_distributor_{event_type}: {self.pf_states.open_orders}")
 
         await self.stratedgy_manager.handle_clob_wss_from_distributor(
             data=data,
@@ -90,14 +109,14 @@ class DataDistributor:
             bound_loads=bound_loads
         )
         
-
+    
     
 
 
 #-----------------------------Helpers--------------------------#
-    def _distribute_as_jsonl(self, df, filename, interval, label):
+    async def _distribute_as_jsonl(self, df, filename, interval, label):
         path = self.file_io.get_path(filename)
-        self.file_io.export_full_df_to_jsonl(df,path)
+        await self.file_io.export_full_df_to_jsonl2(df,path)
         print(f"📦 Label: {label} | Interval: {interval} | Saved to: {path}")
 
 

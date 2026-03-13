@@ -134,9 +134,6 @@ class DataManager:
         for event in events:
             e_type = event.get("event_type")
 
-            if e_type == "trade" or e_type == "order":
-                print(f"from data_manager: {e_type}")
-                
             if not e_type: continue
 
             method_name = f"synthesize_raw_clob_wss_{e_type}"

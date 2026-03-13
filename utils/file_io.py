@@ -1,6 +1,8 @@
 import os
 import json
 import pandas as pd
+import aiofiles
+import asyncio
 
 class FileIO:
     def __init__(self, folder_name="data"):
@@ -25,6 +27,26 @@ class FileIO:
         if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
             return pd.read_json(file_path, lines=True)
         return pd.DataFrame()
+    
+    #------------------------------Async methods ---------------------------------#
+    async def append_row_to_jsonl2(self, file_path, row_dict):
+        """Appends a row without blocking the WebSocket event loop."""
+        try:
+            async with aiofiles.open(file_path, mode='a') as f:
+                await f.write(json.dumps(row_dict) + '\n')
+        except Exception as e:
+            print(f"❌ FileIO Error (Append to {os.path.basename(file_path)}): {e}")     
+
+
+    async def export_full_df_to_jsonl2(self, df, file_path):
+        """Overwrites/Exports using a thread pool to avoid blocking."""
+        try:
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(None, lambda: df.to_json(file_path, orient='records', lines=True))
+
+        except Exception as e:
+            print(f"❌ FileIO Error (Export): {e}")
+
 
     def append_row_to_jsonl(self, file_path, row_dict):
         """Appends a single dictionary as a new line in a JSONL file."""

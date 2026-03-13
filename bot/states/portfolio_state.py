@@ -6,6 +6,8 @@ class PortfolioStates:
         # Bankroll Configuration
         self._wallet_balance = 1000.0
         self._operational_balance = 200.0
+        self._total_avg_price = 0.85
+        self._min_share_size = 5.0
         
         self._max_legs = 4
         self._current_leg = 1
@@ -15,10 +17,22 @@ class PortfolioStates:
 
         # This represents confirmed trades (Positions) this can only be updated after execution
         self._active_trades = []
+        self._update_active_trade_event = asyncio.Event()
+
         self._open_orders = []
         
         # This is pending states from decision maker
         self._trade_queue = asyncio.Queue()
+
+    
+    @property
+    def total_avg_price(self):
+        return self._total_avg_price
+    
+
+    @property
+    def min_share_size(self):
+        return self._min_share_size
 
 
     @property
@@ -81,18 +95,32 @@ class PortfolioStates:
     def active_trades(self):
         return self._active_trades
     
-    def set_active_trades(self, value):
-        if value is None: return
-        self._active_trades.append(value)
+    def set_active_trades(self, data):
+        has_changed = False
 
+        if isinstance(data, dict) and 'id' in data:
+            if not any(t.get('id') == data['id'] for t in self._active_trades):
+                self._active_trades.append(data)
+                has_changed = True
+        elif isinstance(data, list):
+            self._active_trades = [t for t in data if isinstance(t, dict) and t]
+            has_changed = True
+
+        if has_changed:
+            self._update_active_trade_event.set()
+            self._update_active_trade_event.clear()
 
     @property
     def open_orders(self):
         return self._open_orders
     
-    def set_open_orders(self, value):
-        if value is None: return
-        self._open_orders.append(value)
+    def set_open_orders(self, data):
+        if isinstance(data, dict) and 'id' in data:
+            if not any(o.get('id') == data['id'] for o in self.open_orders):
+                self._open_orders.append(data)
+        
+        elif isinstance(data, list):
+            self._open_orders = [o for o in data if isinstance(o, dict) and o]
 
 
     @property

@@ -8,7 +8,7 @@ from websockets.exceptions import ConnectionClosed
 
 class WebsocketService:
 
-    def __init__(self, url, payload, callback, ping_int=5, timeout=5):
+    def __init__(self, url, payload, callback, ping_int=10, timeout=10):
         """
         Universal WebSocket Service
         :param url: The WSS endpoint.
@@ -54,7 +54,8 @@ class WebsocketService:
                 async with websockets.connect(
                         self.url, 
                         ping_interval=self.ping_int, 
-                        ping_timeout=self.timeout
+                        ping_timeout=self.timeout,
+                        close_timeout=10
                     ) as ws:
                     self._ws = ws
                     self.connected_event.set()
